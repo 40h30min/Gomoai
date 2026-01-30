@@ -1,17 +1,264 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>学習五目並べ</title>
-  <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>五目並べ｜思考観測盤</title>
+
+<style>
+:root {
+  --wood:#6b3f18;
+  --ink:#eaeaea;
+  --bg:#070b10;
+  --paper:rgba(255,255,255,.06);
+}
+
+* { box-sizing:border-box; }
+
+body {
+  margin:0;
+  background:
+    radial-gradient(circle at top, #1a1f2b, var(--bg)),
+    repeating-linear-gradient(
+      45deg,
+      rgba(255,255,255,0.02) 0 1px,
+      transparent 1px 6px
+    );
+  color:var(--ink);
+  font-family:"Yu Mincho","Hiragino Mincho ProN",serif;
+}
+
+.app {
+  max-width:520px;
+  margin:auto;
+  padding:10px;
+}
+
+/* ===== ヘッダ ===== */
+.header {
+  text-align:center;
+  margin-bottom:6px;
+}
+.header h1 {
+  margin:4px 0;
+  font-weight:normal;
+  letter-spacing:6px;
+}
+.subtitle {
+  font-size:12px;
+  opacity:.7;
+}
+
+/* ===== 操作 ===== */
+.controls {
+  display:flex;
+  justify-content:center;
+  gap:8px;
+  margin:8px 0;
+}
+select,button {
+  background:var(--paper);
+  border:1px solid rgba(255,255,255,.25);
+  color:var(--ink);
+  padding:6px 14px;
+  border-radius:999px;
+  font-size:13px;
+}
+
+/* ===== ステータス ===== */
+#status {
+  text-align:center;
+  font-size:14px;
+  margin-bottom:6px;
+}
+
+/* ===== 盤 ===== */
+.board-wrap {
+  background:linear-gradient(145deg,#7c4a1d,#4d2b10);
+  padding:8px;
+  border-radius:14px;
+  box-shadow:
+    inset 0 0 0 2px rgba(0,0,0,.4),
+    0 15px 40px rgba(0,0,0,.6);
+}
+.board {
+  display:grid;
+  grid-template-columns:repeat(15,1fr);
+  aspect-ratio:1/1;
+  background:
+    repeating-linear-gradient(to right, rgba(0,0,0,.35) 0 1px, transparent 1px calc(100%/15)),
+    repeating-linear-gradient(to bottom, rgba(0,0,0,.35) 0 1px, transparent 1px calc(100%/15));
+}
+.cell { position:relative; }
+.cell::after {
+  content:"";
+  position:absolute;
+  inset:12%;
+  border-radius:50%;
+  transform:scale(0);
+  transition:transform .15s ease;
+}
+.cell.black::after {
+  background:radial-gradient(circle at 30% 30%,#666,#000);
+  transform:scale(1);
+}
+.cell.white::after {
+  background:radial-gradient(circle at 30% 30%,#fff,#ccc);
+  transform:scale(1);
+}
+
+/* ===== ログ ===== */
+.log {
+  margin-top:10px;
+  background:rgba(0,0,0,.45);
+  backdrop-filter:blur(6px);
+  border-radius:10px;
+  padding:6px;
+  max-height:180px;
+  overflow-y:auto;
+  font-size:12px;
+}
+.log .player { color:#9ddcff; }
+.log .cpu { color:#ffb6b6; }
+.log .result { color:#fff1a8; }
+.log div {
+  padding:2px 0;
+  border-bottom:1px solid rgba(255,255,255,.06);
+}
+</style>
 </head>
+
 <body>
-  <h1>五目並べ</h1>
-  <p id="turn">黒の番</p>
-  <p id="judge"></p>
-  <p id="reason"></p>
-  <div id="board"></div>
-  <script src="script.js"></script>
+<div class="app">
+  <div class="header">
+    <h1>五目並べ</h1>
+    <div class="subtitle">思考観測盤</div>
+  </div>
+
+  <div class="controls">
+    <select id="level">
+      <option value="ume">梅</option>
+      <option value="take" selected>竹</option>
+      <option value="matsu">松</option>
+    </select>
+    <button onclick="resetGame()">再戦</button>
+  </div>
+
+  <div id="status">あなた（黒）の番</div>
+
+  <div class="board-wrap">
+    <div id="board" class="board"></div>
+  </div>
+
+  <div id="log" class="log"></div>
+</div>
+
+<script>
+const SIZE=15;
+const boardEl=document.getElementById("board");
+const logEl=document.getElementById("log");
+const statusEl=document.getElementById("status");
+const levelEl=document.getElementById("level");
+
+let board=[],gameOver=false;
+
+function log(text,cls){
+  const d=document.createElement("div");
+  d.textContent=text;
+  d.className=cls;
+  logEl.appendChild(d);
+  logEl.scrollTop=logEl.scrollHeight;
+}
+
+function init(){
+  board=Array.from({length:SIZE},()=>Array(SIZE).fill(null));
+  boardEl.innerHTML="";
+  logEl.innerHTML="";
+  gameOver=false;
+  statusEl.textContent="あなた（黒）の番";
+  for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++){
+    const c=document.createElement("div");
+    c.className="cell";
+    c.onclick=()=>playerMove(x,y,c);
+    boardEl.appendChild(c);
+  }
+  log("対局開始","result");
+}
+
+function playerMove(x,y,cell){
+  if(gameOver||board[y][x])return;
+  const s=evaluate(x,y,"black");
+  place(x,y,"black",cell);
+  log(`あなた：(${x+1},${y+1}) 評価 ${rank(s)} (${s.toFixed(1)})`,"player");
+  if(checkWin(x,y,"black")){
+    log("あなたの勝利","result");
+    statusEl.textContent="勝利";
+    gameOver=true;return;
+  }
+  statusEl.textContent="CPU 思考中…";
+  setTimeout(cpuMove,300);
+}
+
+function cpuMove(){
+  let move,reason;
+  if(levelEl.value!=="ume"){
+    move=findWin("white"); if(move)reason="勝てる手";
+    if(!move){move=findWin("black"); if(move)reason="防ぎ";}
+  }
+  if(!move){move=bestMove(); reason="評価最大";}
+  const {x,y,score}=move;
+  place(x,y,"white",boardEl.children[y*SIZE+x]);
+  log(`CPU：(${x+1},${y+1}) ${reason} / ${score.toFixed(1)}`,"cpu");
+  if(checkWin(x,y,"white")){
+    log("CPUの勝利","result");
+    statusEl.textContent="敗北";
+    gameOver=true;return;
+  }
+  statusEl.textContent="あなた（黒）の番";
+}
+
+function rank(s){
+  if(s>20)return"良";
+  if(s>8)return"普";
+  return"微";
+}
+
+function place(x,y,c,cell){board[y][x]=c;cell.classList.add(c);}
+function evaluate(x,y,c){
+  let sc=0;
+  [[1,0],[0,1],[1,1],[1,-1]].forEach(([dx,dy])=>{
+    let n=0,nx=x+dx,ny=y+dy;
+    while(nx>=0&&ny>=0&&nx<SIZE&&ny<SIZE&&board[ny][nx]===c){n++;nx+=dx;ny+=dy;}
+    sc+=n*n;
+  });
+  return sc;
+}
+function bestMove(){
+  let b=null,m=-1;
+  for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++)if(!board[y][x]){
+    const s=evaluate(x,y,"white")+evaluate(x,y,"black")*.9;
+    if(s>m){m=s;b={x,y,score:s};}
+  }
+  return b;
+}
+function findWin(c){
+  for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++)if(!board[y][x]){
+    board[y][x]=c;
+    const w=checkWin(x,y,c);
+    board[y][x]=null;
+    if(w)return{x,y,score:999};
+  }
+}
+function checkWin(x,y,c){
+  return[[1,0],[0,1],[1,1],[1,-1]].some(([dx,dy])=>{
+    let n=1;
+    for(let d=1;d<5;d++){if(board[y+dy*d]?.[x+dx*d]===c)n++;else break;}
+    for(let d=1;d<5;d++){if(board[y-dy*d]?.[x-dx*d]===c)n++;else break;}
+    return n>=5;
+  });
+}
+function resetGame(){init();}
+init();
+</script>
 </body>
 </html>

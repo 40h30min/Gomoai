@@ -5,125 +5,147 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>五目並べ｜思考観測盤</title>
 
+<!-- 墨フォント -->
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho&family=Zen+Kurenaido&display=swap" rel="stylesheet">
+
 <style>
-:root {
-  --wood:#6b3f18;
-  --ink:#eaeaea;
-  --bg:#070b10;
-  --paper:rgba(255,255,255,.06);
+:root{
+  --ink:#1a1a1a;
+  --paper:#f7f2e8;
+  --wood1:#7c4a1d;
+  --wood2:#4a2a10;
 }
 
-* { box-sizing:border-box; }
-
-body {
+/* ===== 全体 ===== */
+body{
   margin:0;
   background:
-    radial-gradient(circle at top, #1a1f2b, var(--bg)),
-    repeating-linear-gradient(
-      45deg,
-      rgba(255,255,255,0.02) 0 1px,
-      transparent 1px 6px
-    );
+    url("https://www.transparenttextures.com/patterns/paper-fibers.png"),
+    radial-gradient(circle at top, #2a1b0f, #0b0703);
   color:var(--ink);
-  font-family:"Yu Mincho","Hiragino Mincho ProN",serif;
+  font-family:"Shippori Mincho",serif;
 }
 
-.app {
+.app{
   max-width:520px;
   margin:auto;
   padding:10px;
 }
 
-/* ===== ヘッダ ===== */
-.header {
+/* ===== タイトル ===== */
+.header{
   text-align:center;
   margin-bottom:6px;
 }
-.header h1 {
+.header h1{
   margin:4px 0;
+  letter-spacing:8px;
   font-weight:normal;
-  letter-spacing:6px;
 }
-.subtitle {
+.subtitle{
   font-size:12px;
-  opacity:.7;
+  opacity:.6;
 }
 
 /* ===== 操作 ===== */
-.controls {
+.controls{
   display:flex;
   justify-content:center;
   gap:8px;
-  margin:8px 0;
+  margin:6px 0;
 }
-select,button {
+select,button{
+  font-family:"Shippori Mincho",serif;
   background:var(--paper);
-  border:1px solid rgba(255,255,255,.25);
-  color:var(--ink);
+  border:1px solid #aaa;
   padding:6px 14px;
   border-radius:999px;
-  font-size:13px;
 }
 
-/* ===== ステータス ===== */
-#status {
+/* ===== 状態 ===== */
+#status{
   text-align:center;
-  font-size:14px;
-  margin-bottom:6px;
+  margin:6px 0;
 }
 
 /* ===== 盤 ===== */
-.board-wrap {
-  background:linear-gradient(145deg,#7c4a1d,#4d2b10);
+.board-wrap{
+  background:linear-gradient(145deg,var(--wood1),var(--wood2));
   padding:8px;
   border-radius:14px;
-  box-shadow:
-    inset 0 0 0 2px rgba(0,0,0,.4),
-    0 15px 40px rgba(0,0,0,.6);
+  box-shadow:inset 0 0 0 2px rgba(0,0,0,.4),
+             0 15px 40px rgba(0,0,0,.6);
 }
-.board {
+.board{
   display:grid;
   grid-template-columns:repeat(15,1fr);
   aspect-ratio:1/1;
   background:
-    repeating-linear-gradient(to right, rgba(0,0,0,.35) 0 1px, transparent 1px calc(100%/15)),
-    repeating-linear-gradient(to bottom, rgba(0,0,0,.35) 0 1px, transparent 1px calc(100%/15));
+    repeating-linear-gradient(to right, rgba(0,0,0,.4) 0 1px, transparent 1px calc(100%/15)),
+    repeating-linear-gradient(to bottom, rgba(0,0,0,.4) 0 1px, transparent 1px calc(100%/15));
 }
-.cell { position:relative; }
-.cell::after {
+.cell{position:relative;}
+.cell::after{
   content:"";
   position:absolute;
   inset:12%;
   border-radius:50%;
   transform:scale(0);
-  transition:transform .15s ease;
+  transition:.15s ease;
 }
-.cell.black::after {
-  background:radial-gradient(circle at 30% 30%,#666,#000);
+.cell.black::after{
+  background:radial-gradient(circle at 30% 30%,#555,#000);
   transform:scale(1);
 }
-.cell.white::after {
+.cell.white::after{
   background:radial-gradient(circle at 30% 30%,#fff,#ccc);
   transform:scale(1);
 }
 
+/* 墨にじみ */
+.cell::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:radial-gradient(circle, rgba(0,0,0,.25), transparent 60%);
+  opacity:0;
+}
+.cell.black::before,
+.cell.white::before{
+  animation:ink .4s ease;
+}
+@keyframes ink{
+  from{opacity:.8;}
+  to{opacity:0;}
+}
+
 /* ===== ログ ===== */
-.log {
+.log{
   margin-top:10px;
-  background:rgba(0,0,0,.45);
-  backdrop-filter:blur(6px);
+  background:var(--paper);
+  border:2px solid #333;
   border-radius:10px;
   padding:6px;
   max-height:180px;
   overflow-y:auto;
+  font-family:"Zen Kurenaido",sans-serif;
   font-size:12px;
 }
-.log .player { color:#9ddcff; }
-.log .cpu { color:#ffb6b6; }
-.log .result { color:#fff1a8; }
-.log div {
-  padding:2px 0;
-  border-bottom:1px solid rgba(255,255,255,.06);
+.log .player{color:#1e40af;}
+.log .cpu{color:#7f1d1d;}
+.log .result{color:#000;font-weight:bold;}
+.log div{padding:2px 0;border-bottom:1px dashed #aaa;}
+
+/* ===== 花弁 ===== */
+.petal{
+  position:fixed;
+  top:-20px;
+  font-size:20px;
+  animation:fall linear forwards;
+  pointer-events:none;
+}
+@keyframes fall{
+  to{transform:translateY(120vh) rotate(360deg);opacity:0;}
 }
 </style>
 </head>
@@ -158,16 +180,31 @@ const SIZE=15;
 const boardEl=document.getElementById("board");
 const logEl=document.getElementById("log");
 const statusEl=document.getElementById("status");
-const levelEl=document.getElementById("level");
 
 let board=[],gameOver=false;
 
-function log(text,cls){
+function log(t,c){
   const d=document.createElement("div");
-  d.textContent=text;
-  d.className=cls;
+  d.textContent=t;
+  d.className=c;
   logEl.appendChild(d);
   logEl.scrollTop=logEl.scrollHeight;
+}
+
+function rank(score){
+  if(score>=30) return "良";
+  if(score>=12) return "普";
+  return "微";
+}
+
+function evaluate(x,y,c){
+  let s=0;
+  [[1,0],[0,1],[1,1],[1,-1]].forEach(([dx,dy])=>{
+    let n=0,nx=x+dx,ny=y+dy;
+    while(board[ny]?.[nx]===c){n++;nx+=dx;ny+=dy;}
+    s+=n*n*5;
+  });
+  return s;
 }
 
 function init(){
@@ -179,84 +216,71 @@ function init(){
   for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++){
     const c=document.createElement("div");
     c.className="cell";
-    c.onclick=()=>playerMove(x,y,c);
+    c.onclick=()=>move(x,y,c);
     boardEl.appendChild(c);
   }
   log("対局開始","result");
 }
 
-function playerMove(x,y,cell){
+function move(x,y,cell){
   if(gameOver||board[y][x])return;
   const s=evaluate(x,y,"black");
-  place(x,y,"black",cell);
-  log(`あなた：(${x+1},${y+1}) 評価 ${rank(s)} (${s.toFixed(1)})`,"player");
-  if(checkWin(x,y,"black")){
-    log("あなたの勝利","result");
-    statusEl.textContent="勝利";
-    gameOver=true;return;
+  board[y][x]="black";
+  cell.classList.add("black");
+  log(`あなた：(${x+1},${y+1}) ${rank(s)}（${s}）`,"player");
+  if(win(x,y,"black")){
+    end("あなたの勝ち");
+    return;
   }
   statusEl.textContent="CPU 思考中…";
-  setTimeout(cpuMove,300);
+  setTimeout(cpu,300);
 }
 
-function cpuMove(){
-  let move,reason;
-  if(levelEl.value!=="ume"){
-    move=findWin("white"); if(move)reason="勝てる手";
-    if(!move){move=findWin("black"); if(move)reason="防ぎ";}
+function cpu(){
+  let best={s:-1};
+  for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++)if(!board[y][x]){
+    const s=evaluate(x,y,"white")+evaluate(x,y,"black")*0.9;
+    if(s>best.s) best={x,y,s};
   }
-  if(!move){move=bestMove(); reason="評価最大";}
-  const {x,y,score}=move;
-  place(x,y,"white",boardEl.children[y*SIZE+x]);
-  log(`CPU：(${x+1},${y+1}) ${reason} / ${score.toFixed(1)}`,"cpu");
-  if(checkWin(x,y,"white")){
-    log("CPUの勝利","result");
-    statusEl.textContent="敗北";
-    gameOver=true;return;
+  const i=best.y*SIZE+best.x;
+  board[best.y][best.x]="white";
+  boardEl.children[i].classList.add("white");
+  log(`CPU：(${best.x+1},${best.y+1}) ${rank(best.s)}（${best.s}）`,"cpu");
+  if(win(best.x,best.y,"white")){
+    end("CPUの勝ち");
+    return;
   }
   statusEl.textContent="あなた（黒）の番";
 }
 
-function rank(s){
-  if(s>20)return"良";
-  if(s>8)return"普";
-  return"微";
-}
-
-function place(x,y,c,cell){board[y][x]=c;cell.classList.add(c);}
-function evaluate(x,y,c){
-  let sc=0;
-  [[1,0],[0,1],[1,1],[1,-1]].forEach(([dx,dy])=>{
-    let n=0,nx=x+dx,ny=y+dy;
-    while(nx>=0&&ny>=0&&nx<SIZE&&ny<SIZE&&board[ny][nx]===c){n++;nx+=dx;ny+=dy;}
-    sc+=n*n;
-  });
-  return sc;
-}
-function bestMove(){
-  let b=null,m=-1;
-  for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++)if(!board[y][x]){
-    const s=evaluate(x,y,"white")+evaluate(x,y,"black")*.9;
-    if(s>m){m=s;b={x,y,score:s};}
-  }
-  return b;
-}
-function findWin(c){
-  for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++)if(!board[y][x]){
-    board[y][x]=c;
-    const w=checkWin(x,y,c);
-    board[y][x]=null;
-    if(w)return{x,y,score:999};
-  }
-}
-function checkWin(x,y,c){
+function win(x,y,c){
   return[[1,0],[0,1],[1,1],[1,-1]].some(([dx,dy])=>{
     let n=1;
-    for(let d=1;d<5;d++){if(board[y+dy*d]?.[x+dx*d]===c)n++;else break;}
-    for(let d=1;d<5;d++){if(board[y-dy*d]?.[x-dx*d]===c)n++;else break;}
+    for(let i=1;i<5;i++) if(board[y+dy*i]?.[x+dx*i]===c) n++; else break;
+    for(let i=1;i<5;i++) if(board[y-dy*i]?.[x-dx*i]===c) n++; else break;
     return n>=5;
   });
 }
+
+function end(t){
+  statusEl.textContent=t;
+  log(t,"result");
+  gameOver=true;
+  petals();
+}
+
+function petals(){
+  for(let i=0;i<30;i++){
+    const p=document.createElement("div");
+    p.textContent="🌸";
+    p.className="petal";
+    p.style.left=Math.random()*100+"vw";
+    p.style.animationDuration=3+Math.random()*3+"s";
+    document.body.appendChild(p);
+    setTimeout(()=>p.remove(),6000);
+  }
+}
+
 function resetGame(){init();}
 init();
 </script>

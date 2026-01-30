@@ -3,20 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>五目並べ｜鬼棋士</title>
+<title>五目並べ</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho&family=Zen+Kurenaido&display=swap" rel="stylesheet">
 
 <style>
-body{
-  margin:0;
-  background:#f6f1e7;
-  font-family:"Shippori Mincho",serif;
-}
+body{margin:0;background:#f6f1e7;font-family:"Shippori Mincho",serif}
 .app{max-width:560px;margin:auto;padding:10px}
 h1{text-align:center;letter-spacing:6px;font-weight:normal}
+
 .controls{text-align:center;margin:6px}
 select,button{padding:6px 12px;border-radius:999px;border:1px solid #333}
+
+#status{text-align:center;margin:6px;font-size:14px}
+
 .board-wrap{background:#6b3f1d;padding:14px;border-radius:14px}
 .board{position:relative;width:100%;aspect-ratio:1/1}
 .grid{
@@ -26,24 +26,30 @@ select,button{padding:6px 12px;border-radius:999px;border:1px solid #333}
   repeating-linear-gradient(to bottom,transparent 0,transparent calc(100%/18 - 1px),rgba(0,0,0,.6) calc(100%/18 - 1px),rgba(0,0,0,.6) calc(100%/18));
 }
 .points{position:absolute;inset:0}
+
 .stone{
   position:absolute;width:18px;height:18px;border-radius:50%;
   transform:translate(-50%,-50%) scale(0);
-  animation:drop .15s forwards
+  animation:drop .12s forwards
 }
 .black{background:radial-gradient(circle at 30% 30%,#555,#000)}
 .white{background:radial-gradient(circle at 30% 30%,#fff,#ccc)}
-.preview{opacity:.4;transform:translate(-50%,-50%) scale(.85)}
 @keyframes drop{to{transform:translate(-50%,-50%) scale(1)}}
+
 .log{
-  margin-top:6px;
-  background:#fff;border:2px solid #111;border-radius:10px;
+  margin-top:6px;background:#fff;border:2px solid #111;border-radius:10px;
   padding:6px;max-height:200px;overflow:auto;
   font-family:"Zen Kurenaido",sans-serif;font-size:12px
 }
 .player{color:#1e3a8a}
 .cpu{color:#7f1d1d}
 .result{font-weight:bold}
+
+.winrate{
+  text-align:center;
+  font-size:20px;
+  margin:6px 0;
+}
 </style>
 </head>
 
@@ -52,17 +58,29 @@ select,button{padding:6px 12px;border-radius:999px;border:1px solid #333}
 <h1>五目並べ</h1>
 
 <div class="controls">
-<select id="level">
+<select id="p1">
+<option>人</option>
 <option>梅</option>
 <option>竹</option>
 <option>松</option>
 <option>極</option>
 <option>鬼</option>
 </select>
+vs
+<select id="p2">
+<option>鬼</option>
+<option>極</option>
+<option>松</option>
+<option>竹</option>
+<option>梅</option>
+<option>人</option>
+</select>
+<button onclick="startGame()">開始</button>
 <button onclick="resetGame()">再戦</button>
 </div>
 
-<div id="status" style="text-align:center">あなた（黒）の番｜2回タップ確定</div>
+<div class="winrate" id="winrate">勝率 50% → 50%</div>
+<div id="status">準備中</div>
 
 <div class="board-wrap">
 <div class="board">
@@ -75,14 +93,13 @@ select,button{padding:6px 12px;border-radius:999px;border:1px solid #333}
 </div>
 
 <script>
-const SIZE=19;
-const step=100/18;
+const SIZE=19, step=100/18;
 const points=document.getElementById("points");
 const logEl=document.getElementById("log");
 const statusEl=document.getElementById("status");
+const winrateEl=document.getElementById("winrate");
 
-let board=[...Array(SIZE)].map(()=>Array(SIZE).fill(null));
-let pending=null,gameOver=false;
+let board,turn,players,gameOver;
 
 for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++){
   const p=document.createElement("div");
@@ -91,8 +108,25 @@ for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++){
   p.style.top=y*step+"%";
   p.style.width="22px";p.style.height="22px";
   p.style.transform="translate(-50%,-50%)";
-  p.onclick=()=>tap(x,y);
+  p.onclick=()=>humanMove(x,y);
   points.appendChild(p);
+}
+
+function resetGame(){location.reload()}
+
+function startGame(){
+  board=[...Array(SIZE)].map(()=>Array(SIZE).fill(null));
+  points.querySelectorAll(".stone").forEach(s=>s.remove());
+  logEl.innerHTML="";
+  gameOver=false;
+  turn="black";
+  players={
+    black:document.getElementById("p1").value,
+    white:document.getElementById("p2").value
+  };
+  statusEl.textContent=`${players.black} vs ${players.white}`;
+  winrateEl.textContent="勝率 50% → 50%";
+  nextTurn();
 }
 
 function log(t,c){
@@ -101,11 +135,16 @@ function log(t,c){
   logEl.appendChild(d);logEl.scrollTop=logEl.scrollHeight;
 }
 
-function rank(s){
-  if(s>50000) return "極";
-  if(s>8000) return "良";
-  if(s>2000) return "普";
-  return "微";
+function place(x,y,c){
+  board[y][x]=c;
+  const s=document.createElement("div");
+  s.className="stone "+c;
+  s.style.left=x*step+"%";s.style.top=y*step+"%";
+  points.appendChild(s);
+}
+
+function scoreToWinrate(score){
+  return Math.round(100/(1+Math.exp(-score/8000)));
 }
 
 /* ===== 評価 ===== */
@@ -125,19 +164,22 @@ function lineScore(x,y,c){
   return s;
 }
 
-function evalAdvanced(x,y,c){
-  const e=c==="white"?"black":"white";
-  return lineScore(x,y,c)*1.2 + lineScore(x,y,e)*1.6;
+function evalBoard(){
+  let s=0;
+  for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++){
+    if(board[y][x]==="white") s+=lineScore(x,y,"white");
+    if(board[y][x]==="black") s-=lineScore(x,y,"black");
+  }
+  return s;
 }
 
-/* ===== 候補手生成（鬼の要） ===== */
+/* ===== CPU ===== */
 function getCandidates(){
   const set=new Set();
   for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++){
     if(board[y][x]){
       for(let dy=-2;dy<=2;dy++)for(let dx=-2;dx<=2;dx++){
-        const nx=x+dx,ny=y+dy;
-        if(board[ny]?.[nx]===null) set.add(nx+","+ny);
+        if(board[y+dy]?.[x+dx]===null) set.add((x+dx)+","+(y+dy));
       }
     }
   }
@@ -145,85 +187,48 @@ function getCandidates(){
   return [...set].map(s=>s.split(",").map(Number));
 }
 
-/* ===== αβ探索 ===== */
-function alphabeta(depth,alpha,beta,max){
-  if(depth===0) return 0;
-  const c=max?"white":"black";
-  const cand=getCandidates();
-
-  if(max){
-    let v=-Infinity;
-    for(const [x,y] of cand){
-      board[y][x]=c;
-      if(checkWin(x,y,c)){board[y][x]=null;return 999999;}
-      v=Math.max(v,evalAdvanced(x,y,c)+alphabeta(depth-1,alpha,beta,false));
-      board[y][x]=null;
-      alpha=Math.max(alpha,v);
-      if(beta<=alpha) break;
-    }
-    return v;
-  }else{
-    let v=Infinity;
-    for(const [x,y] of cand){
-      board[y][x]=c;
-      if(checkWin(x,y,c)){board[y][x]=null;return -999999;}
-      v=Math.min(v,evalAdvanced(x,y,c)+alphabeta(depth-1,alpha,beta,true));
-      board[y][x]=null;
-      beta=Math.min(beta,v);
-      if(beta<=alpha) break;
-    }
-    return v;
-  }
-}
-
-/* ===== 操作 ===== */
-function tap(x,y){
-  if(gameOver||board[y][x])return;
-  if(pending&&pending.x===x&&pending.y===y){
-    place(x,y,"black");pending=null;
-    log(`あなた：(${x+1},${y+1})【${rank(evalAdvanced(x,y,"black"))}】`,"player");
-    if(checkWin(x,y,"black"))return win("あなたの勝ち");
-    setTimeout(cpuTurn,300);
-  }else{
-    clearPreview();showPreview(x,y);pending={x,y};
-  }
-}
-
-function showPreview(x,y){
-  const s=document.createElement("div");
-  s.id="preview";s.className="stone black preview";
-  s.style.left=x*step+"%";s.style.top=y*step+"%";
-  points.appendChild(s);
-}
-function clearPreview(){document.getElementById("preview")?.remove()}
-
-function place(x,y,c){
-  clearPreview();board[y][x]=c;
-  const s=document.createElement("div");
-  s.className="stone "+c;
-  s.style.left=x*step+"%";s.style.top=y*step+"%";
-  points.appendChild(s);
-}
-
-function cpuTurn(){
-  const lv=document.getElementById("level").value;
+function cpuMove(level,color){
   let best={s:-Infinity};
-
   for(const [x,y] of getCandidates()){
-    let s=0;
-    board[y][x]="white";
-    if(lv==="梅") s=evalAdvanced(x,y,"white");
-    else if(lv==="竹") s=evalAdvanced(x,y,"white")*1.2;
-    else if(lv==="松") s=alphabeta(2,-1e9,1e9,false);
-    else if(lv==="極") s=alphabeta(4,-1e9,1e9,false);
-    else if(lv==="鬼") s=alphabeta(6,-1e9,1e9,false);
+    board[y][x]=color;
+    let s=evalBoard();
     board[y][x]=null;
     if(s>best.s) best={x,y,s};
   }
+  return best;
+}
 
-  place(best.x,best.y,"white");
-  log(`CPU【${lv}】：(${best.x+1},${best.y+1})`,"cpu");
-  if(checkWin(best.x,best.y,"white")) win("CPUの勝ち");
+/* ===== 手番 ===== */
+function nextTurn(){
+  if(gameOver) return;
+  const p=players[turn];
+  if(p==="人"){
+    statusEl.textContent="あなたの手番";
+  }else{
+    setTimeout(()=>{
+      const before=scoreToWinrate(evalBoard());
+      const {x,y,s}=cpuMove(p,turn);
+      place(x,y,turn);
+      const after=scoreToWinrate(evalBoard());
+      winrateEl.textContent=`勝率 ${before}% → ${after}%`;
+      log(`${p}(${turn})：(${x+1},${y+1})`,"cpu");
+      if(checkWin(x,y,turn)) return win(p+"の勝ち");
+      turn=turn==="black"?"white":"black";
+      nextTurn();
+    },150);
+  }
+}
+
+function humanMove(x,y){
+  if(gameOver||players[turn]!=="人"||board[y][x])return;
+  const before=scoreToWinrate(evalBoard());
+  place(x,y,turn);
+  const after=scoreToWinrate(evalBoard());
+  winrateEl.textContent=`勝率 ${before}% → ${after}%`;
+  log(`あなた：(${x+1},${y+1})`,"player");
+  if(checkWin(x,y,turn)) return win("あなたの勝ち");
+  turn=turn==="black"?"white":"black";
+  nextTurn();
 }
 
 function checkWin(x,y,c){
@@ -237,10 +242,10 @@ function checkWin(x,y,c){
 }
 
 function win(t){
-  gameOver=true;statusEl.textContent=t;log(t,"result");
+  gameOver=true;
+  statusEl.textContent=t;
+  log(t,"result");
 }
-
-function resetGame(){location.reload()}
 </script>
 </body>
 </html>

@@ -2,44 +2,46 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>五目並べ 零 〜和の極み〜</title>
+    <title>五目並べ</title>
     <style>
         :root { 
             --kaya: #e3c07d; /* 榧の木の色 */
             --sumi: #1a1a1b; /* 墨色 */
-            --shunkei: #8b4513; /* 春慶塗風 */
-            --bg: #2d2d2d;
+            --shunkei: #8b4513; /* 春慶塗 */
+            --bg: #1c1c1c;
         }
-        body { background-color: var(--bg); color: #f0f0f0; font-family: "Hiragino Mincho ProN", "serif"; display: flex; flex-direction: column; align-items: center; padding: 20px; }
-        h1 { margin: 10px; font-weight: normal; letter-spacing: 0.2em; border-bottom: 1px solid #555; padding-bottom: 5px; }
+        body { background-color: var(--bg); color: #e0e0e0; font-family: "Hiragino Mincho ProN", "serif"; display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; }
+        h1 { margin: 20px; font-weight: normal; letter-spacing: 0.4em; color: #d4af37; text-shadow: 1px 1px 2px black; }
 
         /* 勝率ゲージ（形勢判断） */
-        .gauge-container { width: 100%; max-width: 600px; margin-bottom: 25px; }
-        .gauge-label { display: flex; justify-content: space-between; font-size: 0.9em; margin-bottom: 5px; color: #ccc; }
-        #win-rate-wrap { height: 12px; background: #444; border-radius: 6px; position: relative; overflow: hidden; border: 1px solid #666; }
-        #win-rate-bar { height: 100%; width: 50%; background: linear-gradient(90deg, #d9534f 0%, #eee 50%, #428bca 100%); transition: width 0.6s cubic-bezier(0.25, 0.1, 0.25, 1); }
-        #win-rate-center { position: absolute; left: 50%; top: 0; width: 2px; height: 100%; background: #fff; z-index: 5; }
+        .gauge-container { width: 100%; max-width: 700px; margin-bottom: 20px; background: #222; padding: 15px; border-radius: 4px; border: 1px solid #444; }
+        .gauge-label { display: flex; justify-content: space-between; font-size: 0.9em; margin-bottom: 8px; letter-spacing: 0.1em; }
+        #win-rate-wrap { height: 14px; background: #333; border-radius: 7px; position: relative; overflow: hidden; border: 1px solid #555; }
+        #win-rate-bar { height: 100%; width: 50%; background: linear-gradient(90deg, #b33e3e 0%, #888 50%, #3e7bb3 100%); transition: width 0.7s ease-in-out; }
+        #win-rate-center { position: absolute; left: 50%; top: 0; width: 2px; height: 100%; background: rgba(255,255,255,0.5); z-index: 5; }
 
-        #main-container { display: flex; gap: 40px; padding: 30px; background: #222; border: 1px solid #444; box-shadow: 0 10px 40px rgba(0,0,0,0.8); flex-wrap: wrap; }
+        #main-container { display: flex; gap: 30px; padding: 30px; background: #262626; border: 1px solid #3d3d3d; box-shadow: 0 15px 50px rgba(0,0,0,0.9); flex-wrap: wrap; border-radius: 8px; }
 
-        /* 盤面 */
-        #board { display: grid; grid-template-columns: repeat(15, 36px); grid-template-rows: repeat(15, 36px); background-color: var(--kaya); padding: 12px; border: 3px solid #5d4037; }
-        .cell { width: 36px; height: 36px; border: 0.5px solid rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative; }
-        .cell::after { content: ""; position: absolute; width: 100%; height: 1px; background: rgba(0,0,0,0.1); }
+        /* 盤面：線の修正 */
+        #board { display: grid; grid-template-columns: repeat(15, 38px); grid-template-rows: repeat(15, 38px); background-color: var(--kaya); padding: 5px; border: 4px solid #5d4037; box-shadow: inset 0 0 20px rgba(0,0,0,0.1); }
+        .cell { width: 38px; height: 38px; border: 0.5px solid rgba(0,0,0,0.25); display: flex; align-items: center; justify-content: center; cursor: pointer; box-sizing: border-box; }
         
-        .stone { width: 32px; height: 32px; border-radius: 50%; z-index: 2; box-shadow: 1px 2px 4px rgba(0,0,0,0.5); }
-        .black { background: #111; background: radial-gradient(circle at 30% 30%, #444, #000); }
-        .white { background: #fff; background: radial-gradient(circle at 30% 30%, #fff, #ddd); border: 1px solid #ccc; }
+        /* 碁石 */
+        .stone { width: 34px; height: 34px; border-radius: 50%; z-index: 2; box-shadow: 2px 3px 6px rgba(0,0,0,0.6); }
+        .black { background: radial-gradient(circle at 35% 35%, #444, #000); }
+        .white { background: radial-gradient(circle at 35% 35%, #fff, #dcdcdc); border: 1px solid #bbb; }
 
-        /* 右パネル */
-        #side-panel { width: 300px; display: flex; flex-direction: column; }
-        #log-window { flex-grow: 1; background: #151515; border: 1px solid #333; padding: 15px; font-size: 0.85em; overflow-y: auto; height: 400px; line-height: 1.8; color: #bbb; display: flex; flex-direction: column-reverse; }
-        .log-entry { border-bottom: 1px dotted #333; padding: 5px 0; }
-        .status-box { font-size: 1.1em; padding: 10px; margin-bottom: 15px; text-align: center; background: #2a2a2a; border-left: 4px solid var(--shunkei); }
+        /* 右側パネル */
+        #side-panel { width: 340px; display: flex; flex-direction: column; gap: 15px; }
+        .status-box { font-size: 1.2em; padding: 12px; text-align: center; background: #1a1a1a; border-bottom: 2px solid var(--shunkei); letter-spacing: 0.1em; }
+        #log-window { flex-grow: 1; background: #0f0f0f; border: 1px solid #333; padding: 15px; font-size: 0.88em; overflow-y: auto; height: 450px; line-height: 1.8; color: #ccc; display: flex; flex-direction: column-reverse; }
+        .log-entry { border-bottom: 1px solid #222; padding: 8px 0; animation: fadeIn 0.4s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-        .btn-wa { background: var(--shunkei); color: white; border: none; padding: 10px 20px; font-family: serif; cursor: pointer; transition: 0.3s; }
+        .controls { display: flex; gap: 10px; }
+        .btn-wa { background: var(--shunkei); color: white; border: 1px solid #bc8f8f; padding: 8px 15px; font-family: serif; cursor: pointer; flex-grow: 1; }
         .btn-wa:hover { background: #a0522d; }
-        select { background: #333; color: white; border: 1px solid #555; padding: 5px; font-family: serif; }
+        select { background: #333; color: white; border: 1px solid #555; padding: 8px; font-family: serif; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -48,9 +50,9 @@
 
     <div class="gauge-container">
         <div class="gauge-label">
-            <span id="p-label">貴殿（優勢）</span>
-            <span id="rate-text">均衡</span>
-            <span id="ai-label">機巧（優勢）</span>
+            <span id="p-label">貴殿 (黒)</span>
+            <span id="rate-text">互角の形勢</span>
+            <span id="ai-label">機巧 (白)</span>
         </div>
         <div id="win-rate-wrap">
             <div id="win-rate-center"></div>
@@ -60,19 +62,19 @@
 
     <div id="main-container">
         <div>
-            <div style="margin-bottom: 15px; display: flex; gap: 10px;">
+            <div class="controls" style="margin-bottom: 15px;">
                 <select id="level-select">
-                    <option value="ume">難易度：梅</option>
-                    <option value="take" selected>難易度：竹</option>
-                    <option value="matsu">難易度：松</option>
+                    <option value="ume">難易度：梅 (初歩)</option>
+                    <option value="take" selected>難易度：竹 (並手)</option>
+                    <option value="matsu">難易度：松 (妙手)</option>
                 </select>
-                <button class="btn-wa" onclick="resetGame()">最初からやり直す</button>
+                <button class="btn-wa" onclick="resetGame()">盤面を清める (リセット)</button>
             </div>
             <div id="board"></div>
         </div>
 
         <div id="side-panel">
-            <div id="status-display" class="status-box">一局開始</div>
+            <div id="status-display" class="status-box">いざ、尋常に。</div>
             <div id="log-window"></div>
         </div>
     </div>
@@ -83,19 +85,18 @@ let board = Array(size).fill().map(() => Array(size).fill(0));
 let gameOver = false;
 let isAiThinking = false;
 
-// メッセージ集
-const playerMsgs = {
-    win: ["見事なり、貴殿の勝利。"],
-    lose: ["此度は機巧の勝ちにございます。"],
-    attack: ["鋭き攻め。一気呵成の勢いなり。","千載一遇の好機を逃さぬ一手。","王手。詰みの予感あり。","攻め筋が見事。"],
-    defense: ["不抜の構え。守り硬し。","窮地を脱する妙手なり。","冷静沈着なる受け。","相手の牙を折る防壁。"],
-    normal: ["堅実なる一手。","盤面を整える布石なり。","静かなる立ち上がり。","次の一手を睨む。"]
+// 語彙力の強化：メッセージ集
+const pMsgs = {
+    win: ["あっぱれ。貴殿の完全勝利にございます。", "終局。見事なる指し回しでした。"],
+    attack: ["【攻勢】怒涛の進撃。一気呵成に攻め立てる。", "【神速】電光石火の一手。機を逃さぬ鋭さ。", "【慧眼】千載一遇の好機を捉えたり。", "【強襲】盤面を揺るがす猛き一打。", "【布石】将来の勝利を見据えた深き一手。"],
+    defense: ["【不抜】鉄壁の守護。隙を見せぬ構え。", "【乾坤一擲】窮地を凌ぐ起死回生の一手。", "【沈着】相手の意図を汲み、静かに封じる。", "【金城鉄壁】揺るぎなき守り。"],
+    normal: ["【堅実】一歩一歩、着実に盤面を整える。", "【呼応】盤上の流れに従う自然なる一手。", "【慎重】機が熟すのを静かに待つ。", "【伝統】古来より伝わる筋の良き一手。"]
 };
 
 const aiMsgs = {
-    attack: ["機巧、勝利の筋を見定めたり。","畳み掛ける構え。","隙を突き、攻勢に転ず。","一閃。これにて詰みなり。"],
-    defense: ["貴殿の鋭気を削がん。","危うきを察し、防じたり。","一歩退いて機を待つ。","その攻め、通さじ。"],
-    normal: ["盤上の均衡を保つ。","機を伺い、駒を置く。","焦らず、静かに。","次なる攻めへの布石。"]
+    attack: ["【機略】勝利への最短距離を見極めたり。", "【一閃】これにて幕引き。逃れられぬ一手。", "【猛追】攻めの糸口を掴み、畳み掛ける。", "【必勝】詰みの形。抗う術は無し。"],
+    defense: ["【封殺】貴殿の鋭気を削ぎ、守りに徹する。", "【深慮】危うきを察し、未然に防ぐ。", "【静止】熱き攻めを冷徹にいなす。", "【防衛】盤上の火種を消し止めたり。"],
+    normal: ["【深呼吸】次なる一手への雌伏の時。", "【均衡】和を保ち、機を伺う。", "【定石】定石通りの冷静なる対応。"]
 };
 
 function initBoard() {
@@ -116,41 +117,43 @@ function addLog(msg, color) {
     const logWin = document.getElementById('log-window');
     const div = document.createElement('div');
     div.className = 'log-entry';
-    div.innerHTML = `<span style="color:${color}">■</span> ${msg}`;
+    div.innerHTML = `<span style="color:${color}">●</span> ${msg}`;
     logWin.prepend(div);
 }
 
 function updateGauge(scoreDiff) {
-    // 均衡を50%として、スコア差10000で振り切る
-    let rate = 50 + (scoreDiff / 400); 
+    // スコア差をゲージに変換（50%が互角）
+    let rate = 50 + (scoreDiff / 500); 
     rate = Math.max(5, Math.min(95, rate));
     document.getElementById('win-rate-bar').style.width = rate + "%";
     
-    let text = "均衡";
-    if(rate > 70) text = "機巧 優勢";
-    else if(rate < 30) text = "貴殿 優勢";
+    let text = "互角の形勢";
+    if(rate > 80) text = "機巧 圧倒的優勢";
+    else if(rate > 60) text = "機巧 優勢";
+    else if(rate < 20) text = "貴殿 圧倒的優勢";
+    else if(rate < 40) text = "貴殿 優勢";
     document.getElementById('rate-text').innerText = text;
 }
 
 function playerMove(r, c) {
     if(board[r][c] !== 0 || gameOver || isAiThinking) return;
     
-    const attack = evaluateMove(r, c, 1);
-    const defense = evaluateMove(r, c, 2);
+    const att = evaluateMove(r, c, 1);
+    const def = evaluateMove(r, c, 2);
     let msg = `(${r+1},${c+1}) ： `;
     
-    if(attack >= 10000) msg += playerMsgs.attack[0];
-    else if(defense >= 10000) msg += playerMsgs.defense[1];
-    else if(attack >= 1000) msg += playerMsgs.attack[Math.floor(Math.random()*playerMsgs.attack.length)];
-    else if(defense >= 1000) msg += playerMsgs.defense[Math.floor(Math.random()*playerMsgs.defense.length)];
-    else msg += playerMsgs.normal[Math.floor(Math.random()*playerMsgs.normal.length)];
+    if(att >= 10000) msg += pMsgs.attack[0];
+    else if(def >= 10000) msg += pMsgs.defense[1];
+    else if(att >= 1000) msg += pMsgs.attack[Math.floor(Math.random()*pMsgs.attack.length)];
+    else if(def >= 1000) msg += pMsgs.defense[Math.floor(Math.random()*pMsgs.defense.length)];
+    else msg += pMsgs.normal[Math.floor(Math.random()*pMsgs.normal.length)];
     
-    addLog(msg, "#e74c3c");
+    addLog(msg, "#d9534f");
     makeMove(r, c, 1);
     
     if(!gameOver) {
         isAiThinking = true;
-        document.getElementById('status-display').innerText = "機巧 思案中...";
+        document.getElementById('status-display').innerText = "機巧、思案中...";
         setTimeout(aiRoutine, 600);
     }
 }
@@ -163,8 +166,8 @@ function makeMove(r, c, player) {
     cells[r * size + c].appendChild(stone);
 
     if(checkWin(r, c, player)) {
-        document.getElementById('status-display').innerText = (player === 1 ? "貴殿の勝利" : "機巧の勝利");
-        addLog(player === 1 ? playerMsgs.win[0] : playerMsgs.lose[0], player === 1 ? "#e74c3c":"#428bca");
+        document.getElementById('status-display').innerText = (player === 1 ? "貴殿、見事なり" : "機巧、勝利なり");
+        addLog(player === 1 ? pMsgs.win[0] : aiMsgs.attack[3], player === 1 ? "#d9534f":"#428bca");
         gameOver = true;
     }
 }
@@ -179,14 +182,14 @@ function aiRoutine() {
     
     if(!gameOver) {
         isAiThinking = false;
-        document.getElementById('status-display').innerText = "貴殿の番";
+        document.getElementById('status-display').innerText = "貴殿の番にございます";
     }
 }
 
 function getBestMove(level) {
     let bestScore = -Infinity;
     let candidates = [];
-    const defWeight = (level === 'matsu' ? 2.5 : level === 'take' ? 1.2 : 0.6);
+    const defWeight = (level === 'matsu' ? 2.8 : level === 'take' ? 1.4 : 0.7);
 
     for(let r=0; r<size; r++) {
         for(let c=0; c<size; c++) {
@@ -194,7 +197,7 @@ function getBestMove(level) {
             let att = evaluateMove(r, c, 2);
             let def = evaluateMove(r, c, 1);
             let total = att + (def * defWeight);
-            if(level === 'ume') total += Math.random() * 80;
+            if(level === 'ume') total += Math.random() * 100;
 
             if(total > bestScore) {
                 bestScore = total;
@@ -206,7 +209,7 @@ function getBestMove(level) {
     }
     const m = candidates[Math.floor(Math.random()*candidates.length)];
     let res = "";
-    if(m.att >= 10000) res = aiMsgs.attack[0];
+    if(m.att >= 10000) res = aiMsgs.attack[1];
     else if(m.def >= 10000) res = aiMsgs.defense[1];
     else if(m.att >= 1000) res = aiMsgs.attack[Math.floor(Math.random()*aiMsgs.attack.length)];
     else if(m.def >= 1000) res = aiMsgs.defense[Math.floor(Math.random()*aiMsgs.defense.length)];
@@ -226,9 +229,9 @@ function evaluateMove(r, c, p) {
             if(nr>=0 && nr<size && nc>=0 && nc<size && board[nr][nc] === 0) open++;
         });
         if(line >= 5) score += 100000;
-        else if(line === 4) score += (open === 2) ? 10000 : 1000;
-        else if(line === 3) score += (open === 2) ? 1000 : 100;
-        else if(line === 2) score += 10;
+        else if(line === 4) score += (open === 2) ? 12000 : 2000;
+        else if(line === 3) score += (open === 2) ? 1500 : 300;
+        else if(line === 2) score += 20;
     });
     return score;
 }
@@ -248,7 +251,7 @@ function resetGame() {
     board = Array(size).fill().map(() => Array(size).fill(0));
     gameOver = false; isAiThinking = false;
     document.getElementById('log-window').innerHTML = '';
-    document.getElementById('status-display').innerText = "一局開始";
+    document.getElementById('status-display').innerText = "いざ、尋常に。";
     initBoard();
 }
 

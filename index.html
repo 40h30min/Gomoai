@@ -2,63 +2,77 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>五目並べ 極 - 松竹梅AI</title>
+    <title>五目並べ 零 〜和の極み〜</title>
     <style>
-        :root { --wood: #dcb35c; --line: #333; --bg: #2c3e50; --panel: #34495e; --log-bg: #1a252f; }
-        body { background-color: var(--bg); color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px; }
-        #main-container { display: flex; gap: 30px; padding: 25px; background: var(--panel); border-radius: 15px; box-shadow: 0 20px 50px rgba(0,0,0,0.6); flex-wrap: wrap; }
-        
+        :root { 
+            --kaya: #e3c07d; /* 榧の木の色 */
+            --sumi: #1a1a1b; /* 墨色 */
+            --shunkei: #8b4513; /* 春慶塗風 */
+            --bg: #2d2d2d;
+        }
+        body { background-color: var(--bg); color: #f0f0f0; font-family: "Hiragino Mincho ProN", "serif"; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        h1 { margin: 10px; font-weight: normal; letter-spacing: 0.2em; border-bottom: 1px solid #555; padding-bottom: 5px; }
+
+        /* 勝率ゲージ（形勢判断） */
+        .gauge-container { width: 100%; max-width: 600px; margin-bottom: 25px; }
+        .gauge-label { display: flex; justify-content: space-between; font-size: 0.9em; margin-bottom: 5px; color: #ccc; }
+        #win-rate-wrap { height: 12px; background: #444; border-radius: 6px; position: relative; overflow: hidden; border: 1px solid #666; }
+        #win-rate-bar { height: 100%; width: 50%; background: linear-gradient(90deg, #d9534f 0%, #eee 50%, #428bca 100%); transition: width 0.6s cubic-bezier(0.25, 0.1, 0.25, 1); }
+        #win-rate-center { position: absolute; left: 50%; top: 0; width: 2px; height: 100%; background: #fff; z-index: 5; }
+
+        #main-container { display: flex; gap: 40px; padding: 30px; background: #222; border: 1px solid #444; box-shadow: 0 10px 40px rgba(0,0,0,0.8); flex-wrap: wrap; }
+
         /* 盤面 */
-        #board { display: grid; grid-template-columns: repeat(15, 34px); grid-template-rows: repeat(15, 34px); background-color: var(--wood); padding: 10px; border: 5px solid #8b4513; }
-        .cell { width: 34px; height: 34px; border: 0.5px solid rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: center; cursor: pointer; }
-        .stone { width: 30px; height: 30px; border-radius: 50%; z-index: 2; box-shadow: 2px 3px 5px rgba(0,0,0,0.4); }
-        .black { background: radial-gradient(circle at 30% 30%, #555, #000); }
-        .white { background: radial-gradient(circle at 30% 30%, #fff, #bbb); border: 1px solid #aaa; }
-
-        /* 勝率ゲージ */
-        #win-rate-container { width: 100%; height: 30px; background: #555; border-radius: 15px; margin-bottom: 20px; overflow: hidden; position: relative; border: 2px solid #fff; }
-        #win-rate-bar { height: 100%; width: 50%; background: linear-gradient(to right, #e74c3c, #3498db); transition: width 0.8s ease-in-out; }
-        #win-rate-text { position: absolute; width: 100%; text-align: center; line-height: 30px; font-weight: bold; text-shadow: 1px 1px 2px #000; }
-
-        /* サイドパネル */
-        #side-panel { width: 320px; display: flex; flex-direction: column; gap: 15px; }
-        #log-window { flex-grow: 1; background: var(--log-bg); border-radius: 8px; padding: 15px; font-size: 0.85em; overflow-y: auto; height: 350px; border: 1px solid #555; color: #ecf0f1; display: flex; flex-direction: column-reverse; }
-        .log-entry { margin-bottom: 8px; padding-bottom: 5px; border-bottom: 1px solid #2c3e50; }
+        #board { display: grid; grid-template-columns: repeat(15, 36px); grid-template-rows: repeat(15, 36px); background-color: var(--kaya); padding: 12px; border: 3px solid #5d4037; }
+        .cell { width: 36px; height: 36px; border: 0.5px solid rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative; }
+        .cell::after { content: ""; position: absolute; width: 100%; height: 1px; background: rgba(0,0,0,0.1); }
         
-        select, button { padding: 10px; border-radius: 5px; border: none; font-weight: bold; cursor: pointer; }
-        .controls { display: flex; gap: 10px; margin-bottom: 10px; }
+        .stone { width: 32px; height: 32px; border-radius: 50%; z-index: 2; box-shadow: 1px 2px 4px rgba(0,0,0,0.5); }
+        .black { background: #111; background: radial-gradient(circle at 30% 30%, #444, #000); }
+        .white { background: #fff; background: radial-gradient(circle at 30% 30%, #fff, #ddd); border: 1px solid #ccc; }
+
+        /* 右パネル */
+        #side-panel { width: 300px; display: flex; flex-direction: column; }
+        #log-window { flex-grow: 1; background: #151515; border: 1px solid #333; padding: 15px; font-size: 0.85em; overflow-y: auto; height: 400px; line-height: 1.8; color: #bbb; display: flex; flex-direction: column-reverse; }
+        .log-entry { border-bottom: 1px dotted #333; padding: 5px 0; }
+        .status-box { font-size: 1.1em; padding: 10px; margin-bottom: 15px; text-align: center; background: #2a2a2a; border-left: 4px solid var(--shunkei); }
+
+        .btn-wa { background: var(--shunkei); color: white; border: none; padding: 10px 20px; font-family: serif; cursor: pointer; transition: 0.3s; }
+        .btn-wa:hover { background: #a0522d; }
+        select { background: #333; color: white; border: 1px solid #555; padding: 5px; font-family: serif; }
     </style>
 </head>
 <body>
 
-    <h1>五目並べ 極</h1>
+    <h1>五目並べ 零</h1>
 
-    <div style="width: 100%; max-width: 800px;">
-        <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.9em;">
-            <span>あなた (黒)</span>
-            <span>AI (白)</span>
+    <div class="gauge-container">
+        <div class="gauge-label">
+            <span id="p-label">貴殿（優勢）</span>
+            <span id="rate-text">均衡</span>
+            <span id="ai-label">機巧（優勢）</span>
         </div>
-        <div id="win-rate-container">
+        <div id="win-rate-wrap">
+            <div id="win-rate-center"></div>
             <div id="win-rate-bar"></div>
-            <div id="win-rate-text">勝率分析中...</div>
         </div>
     </div>
 
     <div id="main-container">
         <div>
-            <div class="controls">
+            <div style="margin-bottom: 15px; display: flex; gap: 10px;">
                 <select id="level-select">
-                    <option value="ume">難易度：梅 (初心者)</option>
-                    <option value="take" selected>難易度：竹 (中級者)</option>
-                    <option value="matsu">難易度：松 (上級者)</option>
+                    <option value="ume">難易度：梅</option>
+                    <option value="take" selected>難易度：竹</option>
+                    <option value="matsu">難易度：松</option>
                 </select>
-                <button onclick="resetGame()" style="background: #e67e22; color: white;">リセット</button>
+                <button class="btn-wa" onclick="resetGame()">最初からやり直す</button>
             </div>
             <div id="board"></div>
         </div>
 
         <div id="side-panel">
-            <div id="status-display" style="font-size: 1.2em; text-align: center; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 5px;">あなたの番です</div>
+            <div id="status-display" class="status-box">一局開始</div>
             <div id="log-window"></div>
         </div>
     </div>
@@ -68,6 +82,21 @@ const size = 15;
 let board = Array(size).fill().map(() => Array(size).fill(0));
 let gameOver = false;
 let isAiThinking = false;
+
+// メッセージ集
+const playerMsgs = {
+    win: ["見事なり、貴殿の勝利。"],
+    lose: ["此度は機巧の勝ちにございます。"],
+    attack: ["鋭き攻め。一気呵成の勢いなり。","千載一遇の好機を逃さぬ一手。","王手。詰みの予感あり。","攻め筋が見事。"],
+    defense: ["不抜の構え。守り硬し。","窮地を脱する妙手なり。","冷静沈着なる受け。","相手の牙を折る防壁。"],
+    normal: ["堅実なる一手。","盤面を整える布石なり。","静かなる立ち上がり。","次の一手を睨む。"]
+};
+
+const aiMsgs = {
+    attack: ["機巧、勝利の筋を見定めたり。","畳み掛ける構え。","隙を突き、攻勢に転ず。","一閃。これにて詰みなり。"],
+    defense: ["貴殿の鋭気を削がん。","危うきを察し、防じたり。","一歩退いて機を待つ。","その攻め、通さじ。"],
+    normal: ["盤上の均衡を保つ。","機を伺い、駒を置く。","焦らず、静かに。","次なる攻めへの布石。"]
+};
 
 function initBoard() {
     const boardEl = document.getElementById('board');
@@ -80,40 +109,48 @@ function initBoard() {
             boardEl.appendChild(cell);
         }
     }
-    updateWinRate(0, 0);
-    addLog("対局開始。難易度を選んで打ってください。");
+    updateGauge(0);
 }
 
-function addLog(msg, isAi = false) {
+function addLog(msg, color) {
     const logWin = document.getElementById('log-window');
     const div = document.createElement('div');
     div.className = 'log-entry';
-    div.innerHTML = `<span style="color:${isAi ? '#3498db':'#e74c3c'}; font-weight:bold;">${isAi?'AI':'あなた'}:</span> ${msg}`;
+    div.innerHTML = `<span style="color:${color}">■</span> ${msg}`;
     logWin.prepend(div);
 }
 
-function updateWinRate(pScore, aiScore) {
-    const total = pScore + aiScore;
-    let rate = 50;
-    if (total > 0) {
-        // スコアに基づいた勝率計算（極端な差が出すぎないよう調整）
-        rate = 50 + (aiScore - pScore) / 200;
-        rate = Math.max(5, Math.min(95, rate));
-    }
+function updateGauge(scoreDiff) {
+    // 均衡を50%として、スコア差10000で振り切る
+    let rate = 50 + (scoreDiff / 400); 
+    rate = Math.max(5, Math.min(95, rate));
     document.getElementById('win-rate-bar').style.width = rate + "%";
-    document.getElementById('win-rate-text').innerText = `AI優勢度: ${rate.toFixed(1)}%`;
+    
+    let text = "均衡";
+    if(rate > 70) text = "機巧 優勢";
+    else if(rate < 30) text = "貴殿 優勢";
+    document.getElementById('rate-text').innerText = text;
 }
 
 function playerMove(r, c) {
     if(board[r][c] !== 0 || gameOver || isAiThinking) return;
     
-    const pEval = evaluateMove(r, c, 1);
-    addLog(`(${r+1},${c+1}) に着手。${pEval > 1000 ? '鋭い手です！' : ''}`);
+    const attack = evaluateMove(r, c, 1);
+    const defense = evaluateMove(r, c, 2);
+    let msg = `(${r+1},${c+1}) ： `;
     
+    if(attack >= 10000) msg += playerMsgs.attack[0];
+    else if(defense >= 10000) msg += playerMsgs.defense[1];
+    else if(attack >= 1000) msg += playerMsgs.attack[Math.floor(Math.random()*playerMsgs.attack.length)];
+    else if(defense >= 1000) msg += playerMsgs.defense[Math.floor(Math.random()*playerMsgs.defense.length)];
+    else msg += playerMsgs.normal[Math.floor(Math.random()*playerMsgs.normal.length)];
+    
+    addLog(msg, "#e74c3c");
     makeMove(r, c, 1);
+    
     if(!gameOver) {
         isAiThinking = true;
-        document.getElementById('status-display').innerText = "AI思考中...";
+        document.getElementById('status-display').innerText = "機巧 思案中...";
         setTimeout(aiRoutine, 600);
     }
 }
@@ -126,77 +163,71 @@ function makeMove(r, c, player) {
     cells[r * size + c].appendChild(stone);
 
     if(checkWin(r, c, player)) {
-        document.getElementById('status-display').innerText = (player === 1 ? "あなたの勝利！" : "AIの勝利...");
+        document.getElementById('status-display').innerText = (player === 1 ? "貴殿の勝利" : "機巧の勝利");
+        addLog(player === 1 ? playerMsgs.win[0] : playerMsgs.lose[0], player === 1 ? "#e74c3c":"#428bca");
         gameOver = true;
     }
 }
 
 function aiRoutine() {
     const level = document.getElementById('level-select').value;
-    const bestMove = getBestMove(level);
+    const move = getBestMove(level);
     
-    updateWinRate(bestMove.defense, bestMove.attack);
-    addLog(bestMove.reason, true);
-    makeMove(bestMove.r, bestMove.c, 2);
+    updateGauge(move.score);
+    addLog(`(${move.r+1},${move.c+1}) ： ${move.reason}`, "#428bca");
+    makeMove(move.r, move.c, 2);
     
     if(!gameOver) {
         isAiThinking = false;
-        document.getElementById('status-display').innerText = "あなたの番です";
+        document.getElementById('status-display').innerText = "貴殿の番";
     }
 }
 
 function getBestMove(level) {
     let bestScore = -Infinity;
     let candidates = [];
-    
-    // 難易度による重み付け
-    const weights = { ume: 0.5, take: 1.0, matsu: 2.0 };
-    const defWeight = weights[level];
+    const defWeight = (level === 'matsu' ? 2.5 : level === 'take' ? 1.2 : 0.6);
 
     for(let r=0; r<size; r++) {
         for(let c=0; c<size; c++) {
             if(board[r][c] !== 0) continue;
-            
-            let attack = evaluateMove(r, c, 2); 
-            let defense = evaluateMove(r, c, 1);
-            
-            // 難易度が高いほど相手の邪魔（defense）を重視
-            let total = attack + (defense * defWeight);
-            
-            // 梅レベルなら少しランダム性を入れる
-            if(level === 'ume') total += Math.random() * 50;
+            let att = evaluateMove(r, c, 2);
+            let def = evaluateMove(r, c, 1);
+            let total = att + (def * defWeight);
+            if(level === 'ume') total += Math.random() * 80;
 
             if(total > bestScore) {
                 bestScore = total;
-                candidates = [{r, c, attack, defense}];
+                candidates = [{r, c, att, def, score: att - def}];
             } else if(total === bestScore) {
-                candidates.push({r, c, attack, defense});
+                candidates.push({r, c, att, def, score: att - def});
             }
         }
     }
-    const move = candidates[Math.floor(Math.random() * candidates.length)];
-    let reason = "最善の場所を選びました。";
-    if(move.attack > 5000) reason = "勝利を確信しました。";
-    else if(move.defense > 5000) reason = "危ない！あなたのリーチを阻止します。";
+    const m = candidates[Math.floor(Math.random()*candidates.length)];
+    let res = "";
+    if(m.att >= 10000) res = aiMsgs.attack[0];
+    else if(m.def >= 10000) res = aiMsgs.defense[1];
+    else if(m.att >= 1000) res = aiMsgs.attack[Math.floor(Math.random()*aiMsgs.attack.length)];
+    else if(m.def >= 1000) res = aiMsgs.defense[Math.floor(Math.random()*aiMsgs.defense.length)];
+    else res = aiMsgs.normal[Math.floor(Math.random()*aiMsgs.normal.length)];
     
-    return { ...move, reason };
+    return { ...m, reason: res };
 }
 
 function evaluateMove(r, c, p) {
     let score = 0;
     const directions = [[1,0],[0,1],[1,1],[1,-1]];
     directions.forEach(([dr, dc]) => {
-        let line = 1, openEnds = 0;
+        let line = 1, open = 0;
         [1, -1].forEach(s => {
-            let nr = r + dr*s, nc = c + dc*s;
-            while(nr>=0 && nr<size && nc>=0 && nc<size && board[nr][nc] === p) {
-                line++; nr += dr*s; nc += dc*s;
-            }
-            if(nr>=0 && nr<size && nc>=0 && nc<size && board[nr][nc] === 0) openEnds++;
+            let nr = r+dr*s, nc = c+dc*s;
+            while(nr>=0 && nr<size && nc>=0 && nc<size && board[nr][nc] === p) { line++; nr+=dr*s; nc+=dc*s; }
+            if(nr>=0 && nr<size && nc>=0 && nc<size && board[nr][nc] === 0) open++;
         });
         if(line >= 5) score += 100000;
-        else if(line === 4) score += (openEnds === 2) ? 10000 : 1000;
-        else if(line === 3) score += (openEnds === 2) ? 1000 : 100;
+        else if(line === 4) score += (open === 2) ? 10000 : 1000;
+        else if(line === 3) score += (open === 2) ? 1000 : 100;
         else if(line === 2) score += 10;
     });
     return score;
@@ -207,9 +238,7 @@ function checkWin(r, c, p) {
         let ct = 1;
         [1, -1].forEach(s => {
             let nr = r+dr*s, nc = c+dc*s;
-            while(nr>=0 && nr<size && nc>=0 && nc<size && board[nr][nc] === p) {
-                ct++; nr+=dr*s; nc+=dc*s;
-            }
+            while(nr>=0 && nr<size && nc>=0 && nc<size && board[nr][nc] === p) { ct++; nr+=dr*s; nc+=dc*s; }
         });
         return ct >= 5;
     });
@@ -219,7 +248,7 @@ function resetGame() {
     board = Array(size).fill().map(() => Array(size).fill(0));
     gameOver = false; isAiThinking = false;
     document.getElementById('log-window').innerHTML = '';
-    document.getElementById('status-display').innerText = "あなたの番です";
+    document.getElementById('status-display').innerText = "一局開始";
     initBoard();
 }
 

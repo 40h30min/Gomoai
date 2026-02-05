@@ -5,99 +5,82 @@
     <title>五目並べ</title>
     <style>
         :root { 
-            --kaya: #e3c07d; /* 榧の木の色 */
-            --sumi: #1a1a1b; /* 墨色 */
-            --shunkei: #8b4513; /* 春慶塗 */
-            --bg: #1c1c1c;
+            --kaya: #e3c07d; 
+            --shunkei: #8b4513;
+            --sakura: #ffb7c5;
         }
-        body { background-color: var(--bg); color: #e0e0e0; font-family: "Hiragino Mincho ProN", "serif"; display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; }
-        h1 { margin: 20px; font-weight: normal; letter-spacing: 0.4em; color: #d4af37; text-shadow: 1px 1px 2px black; }
-
-        /* 勝率ゲージ（形勢判断） */
-        .gauge-container { width: 100%; max-width: 700px; margin-bottom: 20px; background: #222; padding: 15px; border-radius: 4px; border: 1px solid #444; }
-        .gauge-label { display: flex; justify-content: space-between; font-size: 0.9em; margin-bottom: 8px; letter-spacing: 0.1em; }
-        #win-rate-wrap { height: 14px; background: #333; border-radius: 7px; position: relative; overflow: hidden; border: 1px solid #555; }
-        #win-rate-bar { height: 100%; width: 50%; background: linear-gradient(90deg, #b33e3e 0%, #888 50%, #3e7bb3 100%); transition: width 0.7s ease-in-out; }
-        #win-rate-center { position: absolute; left: 50%; top: 0; width: 2px; height: 100%; background: rgba(255,255,255,0.5); z-index: 5; }
-
-        #main-container { display: flex; gap: 30px; padding: 30px; background: #262626; border: 1px solid #3d3d3d; box-shadow: 0 15px 50px rgba(0,0,0,0.9); flex-wrap: wrap; border-radius: 8px; }
-
-        /* 盤面：線の修正 */
-        #board { display: grid; grid-template-columns: repeat(15, 38px); grid-template-rows: repeat(15, 38px); background-color: var(--kaya); padding: 5px; border: 4px solid #5d4037; box-shadow: inset 0 0 20px rgba(0,0,0,0.1); }
-        .cell { width: 38px; height: 38px; border: 0.5px solid rgba(0,0,0,0.25); display: flex; align-items: center; justify-content: center; cursor: pointer; box-sizing: border-box; }
+        body { background-color: #1a1a1a; color: #e0e0e0; font-family: "Hiragino Mincho ProN", "serif"; display: flex; flex-direction: column; align-items: center; margin: 0; overflow-x: hidden; }
         
-        /* 碁石 */
-        .stone { width: 34px; height: 34px; border-radius: 50%; z-index: 2; box-shadow: 2px 3px 6px rgba(0,0,0,0.6); }
+        /* 勝率ゲージ */
+        .gauge-container { width: 100%; max-width: 700px; margin: 20px 0; background: #222; padding: 15px; border: 1px solid #444; border-radius: 8px; }
+        #win-rate-wrap { height: 14px; background: #333; border-radius: 7px; position: relative; overflow: hidden; border: 1px solid #555; }
+        #win-rate-bar { height: 100%; width: 50%; background: linear-gradient(90deg, #b33e3e 0%, #888 50%, #3e7bb3 100%); transition: width 0.7s ease; }
+        
+        /* メインレイアウト */
+        #main-container { display: flex; gap: 30px; padding: 30px; background: #262626; border: 1px solid #3d3d3d; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.8); flex-wrap: wrap; }
+        #board { display: grid; grid-template-columns: repeat(15, 38px); grid-template-rows: repeat(15, 38px); background-color: var(--kaya); padding: 5px; border: 4px solid #5d4037; position: relative; }
+        .cell { width: 38px; height: 38px; border: 0.5px solid rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .stone { width: 34px; height: 34px; border-radius: 50%; z-index: 2; box-shadow: 2px 3px 6px rgba(0,0,0,0.6); animation: drop 0.2s ease-out; }
+        @keyframes drop { from { transform: scale(1.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
         .black { background: radial-gradient(circle at 35% 35%, #444, #000); }
         .white { background: radial-gradient(circle at 35% 35%, #fff, #dcdcdc); border: 1px solid #bbb; }
 
-        /* 右側パネル */
+        /* ログと操作 */
         #side-panel { width: 340px; display: flex; flex-direction: column; gap: 15px; }
-        .status-box { font-size: 1.2em; padding: 12px; text-align: center; background: #1a1a1a; border-bottom: 2px solid var(--shunkei); letter-spacing: 0.1em; }
-        #log-window { flex-grow: 1; background: #0f0f0f; border: 1px solid #333; padding: 15px; font-size: 0.88em; overflow-y: auto; height: 450px; line-height: 1.8; color: #ccc; display: flex; flex-direction: column-reverse; }
-        .log-entry { border-bottom: 1px solid #222; padding: 8px 0; animation: fadeIn 0.4s; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-        .controls { display: flex; gap: 10px; }
-        .btn-wa { background: var(--shunkei); color: white; border: 1px solid #bc8f8f; padding: 8px 15px; font-family: serif; cursor: pointer; flex-grow: 1; }
+        #log-window { flex-grow: 1; background: #0f0f0f; border: 1px solid #333; padding: 15px; font-size: 0.88em; overflow-y: auto; height: 380px; display: flex; flex-direction: column-reverse; }
+        .btn-wa { background: var(--shunkei); color: white; border: 1px solid #bc8f8f; padding: 10px; cursor: pointer; font-family: serif; transition: 0.2s; }
         .btn-wa:hover { background: #a0522d; }
-        select { background: #333; color: white; border: 1px solid #555; padding: 8px; font-family: serif; cursor: pointer; }
+        .btn-wa:disabled { background: #444; color: #888; border-color: #333; }
+
+        /* 勝利演出用キャンバス */
+        #victory-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; display: none; }
+        #victory-text { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 8rem; color: #d4af37; text-shadow: 0 0 30px #fff; z-index: 101; display: none; white-space: nowrap; pointer-events: none; letter-spacing: 0.5em; }
     </style>
 </head>
 <body>
 
-    <h1>五目並べ 零</h1>
+    <h1 style="color:#d4af37; letter-spacing:0.3em;">五目並べ 零 〜祝祭〜</h1>
 
     <div class="gauge-container">
-        <div class="gauge-label">
-            <span id="p-label">貴殿 (黒)</span>
-            <span id="rate-text">互角の形勢</span>
-            <span id="ai-label">機巧 (白)</span>
+        <div style="display:flex; justify-content:space-between; font-size:0.9em; margin-bottom:5px;">
+            <span>黒 (先手)</span><span id="rate-text">均衡</span><span>白 (後手)</span>
         </div>
-        <div id="win-rate-wrap">
-            <div id="win-rate-center"></div>
-            <div id="win-rate-bar"></div>
-        </div>
+        <div id="win-rate-wrap"><div id="win-rate-bar"></div></div>
     </div>
 
     <div id="main-container">
         <div>
-            <div class="controls" style="margin-bottom: 15px;">
-                <select id="level-select">
-                    <option value="ume">難易度：梅 (初歩)</option>
-                    <option value="take" selected>難易度：竹 (並手)</option>
-                    <option value="matsu">難易度：松 (妙手)</option>
+            <div style="margin-bottom:15px; display:flex; gap:10px;">
+                <select id="mode-select" onchange="resetGame()">
+                    <option value="cpu">対機巧 (CPU戦)</option>
+                    <option value="pvp">対人 (二人対局)</option>
                 </select>
-                <button class="btn-wa" onclick="resetGame()">盤面を清める (リセット)</button>
+                <select id="level-select">
+                    <option value="ume">難易度：梅</option>
+                    <option value="take" selected>難易度：竹</option>
+                    <option value="matsu">難易度：松</option>
+                </select>
+                <button class="btn-wa" onclick="undoMove()">一手戻る</button>
+                <button class="btn-wa" onclick="resetGame()">清める</button>
             </div>
             <div id="board"></div>
         </div>
 
         <div id="side-panel">
-            <div id="status-display" class="status-box">いざ、尋常に。</div>
+            <div id="status-display" style="padding:15px; background:#111; text-align:center; font-size:1.2em; border-bottom:2px solid #8b4513;">いざ。</div>
             <div id="log-window"></div>
         </div>
     </div>
 
+    <canvas id="victory-canvas"></canvas>
+    <div id="victory-text">祝 勝利</div>
+
 <script>
 const size = 15;
 let board = Array(size).fill().map(() => Array(size).fill(0));
+let history = []; // 棋譜保存用
 let gameOver = false;
 let isAiThinking = false;
-
-// 語彙力の強化：メッセージ集
-const pMsgs = {
-    win: ["あっぱれ。貴殿の完全勝利にございます。", "終局。見事なる指し回しでした。"],
-    attack: ["【攻勢】怒涛の進撃。一気呵成に攻め立てる。", "【神速】電光石火の一手。機を逃さぬ鋭さ。", "【慧眼】千載一遇の好機を捉えたり。", "【強襲】盤面を揺るがす猛き一打。", "【布石】将来の勝利を見据えた深き一手。"],
-    defense: ["【不抜】鉄壁の守護。隙を見せぬ構え。", "【乾坤一擲】窮地を凌ぐ起死回生の一手。", "【沈着】相手の意図を汲み、静かに封じる。", "【金城鉄壁】揺るぎなき守り。"],
-    normal: ["【堅実】一歩一歩、着実に盤面を整える。", "【呼応】盤上の流れに従う自然なる一手。", "【慎重】機が熟すのを静かに待つ。", "【伝統】古来より伝わる筋の良き一手。"]
-};
-
-const aiMsgs = {
-    attack: ["【機略】勝利への最短距離を見極めたり。", "【一閃】これにて幕引き。逃れられぬ一手。", "【猛追】攻めの糸口を掴み、畳み掛ける。", "【必勝】詰みの形。抗う術は無し。"],
-    defense: ["【封殺】貴殿の鋭気を削ぎ、守りに徹する。", "【深慮】危うきを察し、未然に防ぐ。", "【静止】熱き攻めを冷徹にいなす。", "【防衛】盤上の火種を消し止めたり。"],
-    normal: ["【深呼吸】次なる一手への雌伏の時。", "【均衡】和を保ち、機を伺う。", "【定石】定石通りの冷静なる対応。"]
-};
 
 function initBoard() {
     const boardEl = document.getElementById('board');
@@ -106,90 +89,134 @@ function initBoard() {
         for(let c=0; c<size; c++) {
             const cell = document.createElement('div');
             cell.className = 'cell';
-            cell.onclick = () => playerMove(r, c);
+            cell.onclick = () => handleMove(r, c);
             boardEl.appendChild(cell);
         }
     }
-    updateGauge(0);
 }
 
-function addLog(msg, color) {
-    const logWin = document.getElementById('log-window');
-    const div = document.createElement('div');
-    div.className = 'log-entry';
-    div.innerHTML = `<span style="color:${color}">●</span> ${msg}`;
-    logWin.prepend(div);
-}
-
-function updateGauge(scoreDiff) {
-    // スコア差をゲージに変換（50%が互角）
-    let rate = 50 + (scoreDiff / 500); 
-    rate = Math.max(5, Math.min(95, rate));
-    document.getElementById('win-rate-bar').style.width = rate + "%";
-    
-    let text = "互角の形勢";
-    if(rate > 80) text = "機巧 圧倒的優勢";
-    else if(rate > 60) text = "機巧 優勢";
-    else if(rate < 20) text = "貴殿 圧倒的優勢";
-    else if(rate < 40) text = "貴殿 優勢";
-    document.getElementById('rate-text').innerText = text;
-}
-
-function playerMove(r, c) {
+function handleMove(r, c) {
     if(board[r][c] !== 0 || gameOver || isAiThinking) return;
-    
-    const att = evaluateMove(r, c, 1);
-    const def = evaluateMove(r, c, 2);
-    let msg = `(${r+1},${c+1}) ： `;
-    
-    if(att >= 10000) msg += pMsgs.attack[0];
-    else if(def >= 10000) msg += pMsgs.defense[1];
-    else if(att >= 1000) msg += pMsgs.attack[Math.floor(Math.random()*pMsgs.attack.length)];
-    else if(def >= 1000) msg += pMsgs.defense[Math.floor(Math.random()*pMsgs.defense.length)];
-    else msg += pMsgs.normal[Math.floor(Math.random()*pMsgs.normal.length)];
-    
-    addLog(msg, "#d9534f");
-    makeMove(r, c, 1);
-    
-    if(!gameOver) {
+
+    const mode = document.getElementById('mode-select').value;
+    const currentPlayer = (history.length % 2 === 0) ? 1 : 2;
+
+    // 石を置く
+    executeMove(r, c, currentPlayer);
+
+    if(!gameOver && mode === "cpu") {
         isAiThinking = true;
-        document.getElementById('status-display').innerText = "機巧、思案中...";
+        document.getElementById('status-display').innerText = "思案中...";
         setTimeout(aiRoutine, 600);
+    } else if(!gameOver) {
+        document.getElementById('status-display').innerText = (history.length % 2 === 0 ? "黒" : "白") + "の番です";
     }
 }
 
-function makeMove(r, c, player) {
+function executeMove(r, c, player) {
     board[r][c] = player;
-    const cells = document.getElementsByClassName('cell');
-    const stone = document.createElement('div');
-    stone.className = `stone ${player === 1 ? 'black' : 'white'}`;
-    cells[r * size + c].appendChild(stone);
-
+    history.push({r, c, player});
+    renderStones();
+    
     if(checkWin(r, c, player)) {
-        document.getElementById('status-display').innerText = (player === 1 ? "貴殿、見事なり" : "機巧、勝利なり");
-        addLog(player === 1 ? pMsgs.win[0] : aiMsgs.attack[3], player === 1 ? "#d9534f":"#428bca");
-        gameOver = true;
+        triggerVictory(player);
+        return;
     }
+    
+    // 評価とログ
+    const att = evaluateMove(r, c, player);
+    const def = evaluateMove(r, c, player === 1 ? 2 : 1);
+    updateGauge(player === 1 ? att - def : def - att);
+    addLog(`(${r+1},${c+1}) ： ${att > 1000 ? '妙手なり。' : '着手。'}`, player === 1 ? "#d9534f" : "#428bca");
+}
+
+function undoMove() {
+    if(history.length === 0 || gameOver) return;
+    const mode = document.getElementById('mode-select').value;
+    
+    // CPU戦なら自分の手とCPUの手、2つ戻す
+    const steps = (mode === "cpu" && history.length >= 2) ? 2 : 1;
+    for(let i=0; i<steps; i++) {
+        const last = history.pop();
+        board[last.r][last.c] = 0;
+    }
+    
+    renderStones();
+    document.getElementById('status-display').innerText = (history.length % 2 === 0 ? "黒" : "白") + "の番";
+    addLog("時を戻しました。", "#888");
+}
+
+function renderStones() {
+    const cells = document.getElementsByClassName('cell');
+    for(let i=0; i<cells.length; i++) cells[i].innerHTML = '';
+    history.forEach(h => {
+        const stone = document.createElement('div');
+        stone.className = `stone ${h.player === 1 ? 'black' : 'white'}`;
+        cells[h.r * size + h.c].appendChild(stone);
+    });
 }
 
 function aiRoutine() {
     const level = document.getElementById('level-select').value;
-    const move = getBestMove(level);
-    
-    updateGauge(move.score);
-    addLog(`(${move.r+1},${move.c+1}) ： ${move.reason}`, "#428bca");
-    makeMove(move.r, move.c, 2);
-    
+    const best = getBestMove(level);
+    executeMove(best.r, best.c, 2);
     if(!gameOver) {
         isAiThinking = false;
-        document.getElementById('status-display').innerText = "貴殿の番にございます";
+        document.getElementById('status-display').innerText = "貴殿の番";
     }
 }
 
+// --- 勝利演出 ---
+function triggerVictory(player) {
+    gameOver = true;
+    const winner = (player === 1 ? "黒" : "白");
+    document.getElementById('status-display').innerText = winner + " の勝利！";
+    
+    // 演出開始
+    const canvas = document.getElementById('victory-canvas');
+    const text = document.getElementById('victory-text');
+    canvas.style.display = 'block';
+    text.style.display = 'block';
+    text.innerText = winner + " 勝利";
+
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    let particles = [];
+    for(let i=0; i<100; i++) {
+        particles.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            size: Math.random() * 10 + 5,
+            speed: Math.random() * 3 + 1,
+            angle: Math.random() * 360
+        });
+    }
+
+    function animate() {
+        if(!gameOver) return;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "#ffb7c5"; // 桜色
+        particles.forEach(p => {
+            ctx.beginPath();
+            ctx.ellipse(p.x, p.y, p.size, p.size/2, p.angle * Math.PI/180, 0, Math.PI*2);
+            ctx.fill();
+            p.y += p.speed;
+            p.x += Math.sin(p.y/20);
+            p.angle += 2;
+            if(p.y > canvas.height) p.y = -10;
+        });
+        requestAnimationFrame(animate);
+    }
+    animate();
+}
+
+// --- AI・評価ロジック (前回の強化版を継承) ---
 function getBestMove(level) {
     let bestScore = -Infinity;
     let candidates = [];
-    const defWeight = (level === 'matsu' ? 2.8 : level === 'take' ? 1.4 : 0.7);
+    const defWeight = (level === 'matsu' ? 3.0 : 1.5);
 
     for(let r=0; r<size; r++) {
         for(let c=0; c<size; c++) {
@@ -197,25 +224,12 @@ function getBestMove(level) {
             let att = evaluateMove(r, c, 2);
             let def = evaluateMove(r, c, 1);
             let total = att + (def * defWeight);
-            if(level === 'ume') total += Math.random() * 100;
-
-            if(total > bestScore) {
-                bestScore = total;
-                candidates = [{r, c, att, def, score: att - def}];
-            } else if(total === bestScore) {
-                candidates.push({r, c, att, def, score: att - def});
-            }
+            if(level === 'ume') total += Math.random() * 200;
+            if(total > bestScore) { bestScore = total; candidates = [{r, c}]; }
+            else if(total === bestScore) { candidates.push({r, c}); }
         }
     }
-    const m = candidates[Math.floor(Math.random()*candidates.length)];
-    let res = "";
-    if(m.att >= 10000) res = aiMsgs.attack[1];
-    else if(m.def >= 10000) res = aiMsgs.defense[1];
-    else if(m.att >= 1000) res = aiMsgs.attack[Math.floor(Math.random()*aiMsgs.attack.length)];
-    else if(m.def >= 1000) res = aiMsgs.defense[Math.floor(Math.random()*aiMsgs.defense.length)];
-    else res = aiMsgs.normal[Math.floor(Math.random()*aiMsgs.normal.length)];
-    
-    return { ...m, reason: res };
+    return candidates[Math.floor(Math.random()*candidates.length)];
 }
 
 function evaluateMove(r, c, p) {
@@ -229,9 +243,8 @@ function evaluateMove(r, c, p) {
             if(nr>=0 && nr<size && nc>=0 && nc<size && board[nr][nc] === 0) open++;
         });
         if(line >= 5) score += 100000;
-        else if(line === 4) score += (open === 2) ? 12000 : 2000;
-        else if(line === 3) score += (open === 2) ? 1500 : 300;
-        else if(line === 2) score += 20;
+        else if(line === 4) score += (open === 2) ? 10000 : 2000;
+        else if(line === 3) score += (open === 2) ? 1000 : 100;
     });
     return score;
 }
@@ -247,11 +260,29 @@ function checkWin(r, c, p) {
     });
 }
 
+function updateGauge(scoreDiff) {
+    let rate = 50 + (scoreDiff / 500);
+    rate = Math.max(5, Math.min(95, rate));
+    document.getElementById('win-rate-bar').style.width = rate + "%";
+}
+
+function addLog(msg, color) {
+    const logWin = document.getElementById('log-window');
+    const div = document.createElement('div');
+    div.style.borderBottom = "1px solid #222";
+    div.innerHTML = `<span style="color:${color}">●</span> ${msg}`;
+    logWin.prepend(div);
+}
+
 function resetGame() {
     board = Array(size).fill().map(() => Array(size).fill(0));
-    gameOver = false; isAiThinking = false;
+    history = [];
+    gameOver = false;
+    isAiThinking = false;
+    document.getElementById('victory-canvas').style.display = 'none';
+    document.getElementById('victory-text').style.display = 'none';
     document.getElementById('log-window').innerHTML = '';
-    document.getElementById('status-display').innerText = "いざ、尋常に。";
+    document.getElementById('status-display').innerText = "いざ。";
     initBoard();
 }
 

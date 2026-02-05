@@ -4,289 +4,310 @@
     <meta charset="UTF-8">
     <title>五目並べ</title>
     <style>
-        :root { 
-            --kaya: #e3c07d; 
-            --shunkei: #8b4513;
-            --sakura: #ffb7c5;
+        body { 
+            background-color: #222; 
+            color: #fff; 
+            font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            margin: 0; 
+            padding: 20px;
         }
-        body { background-color: #1a1a1a; color: #e0e0e0; font-family: "Hiragino Mincho ProN", "serif"; display: flex; flex-direction: column; align-items: center; margin: 0; overflow-x: hidden; }
         
-        /* 勝率ゲージ */
-        .gauge-container { width: 100%; max-width: 700px; margin: 20px 0; background: #222; padding: 15px; border: 1px solid #444; border-radius: 8px; }
-        #win-rate-wrap { height: 14px; background: #333; border-radius: 7px; position: relative; overflow: hidden; border: 1px solid #555; }
-        #win-rate-bar { height: 100%; width: 50%; background: linear-gradient(90deg, #b33e3e 0%, #888 50%, #3e7bb3 100%); transition: width 0.7s ease; }
+        /* 形勢判断ゲージ */
+        .status-container { width: 100%; max-width: 600px; margin-bottom: 20px; }
+        .gauge-label { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 8px; font-weight: bold; }
+        .gauge-bg { height: 10px; background: #444; border-radius: 5px; overflow: hidden; position: relative; }
+        #gauge-bar { height: 100%; width: 50%; background: linear-gradient(90deg, #ff4b2b, #ff416c, #2b86c5); transition: width 0.5s ease; }
+
+        #main-layout { display: flex; gap: 30px; align-items: flex-start; }
+
+        /* 碁盤のデザイン */
+        #board { 
+            display: grid; 
+            grid-template-columns: repeat(15, 40px); 
+            grid-template-rows: repeat(15, 40px); 
+            background-color: #dbb368; 
+            padding: 10px; 
+            border: 2px solid #333;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .cell { 
+            width: 40px; height: 40px; 
+            border: 1px solid rgba(0,0,0,0.3); 
+            box-sizing: border-box;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+        }
+
+        /* 碁石：置いた瞬間だけアニメーション */
+        .stone { 
+            width: 36px; height: 36px; 
+            border-radius: 50%; 
+            box-shadow: 0 4px 4px rgba(0,0,0,0.4);
+        }
+        .stone.new { animation: place-stone 0.15s ease-out; }
+        @keyframes place-stone {
+            from { transform: scale(1.3); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        .black { background: radial-gradient(circle at 30% 30%, #444, #000); }
+        .white { background: radial-gradient(circle at 30% 30%, #fff, #ccc); border: 1px solid #999; }
+
+        /* 操作パネル */
+        .panel { width: 280px; display: flex; flex-direction: column; gap: 15px; }
+        .info-box { background: #333; padding: 15px; border-radius: 8px; font-size: 16px; font-weight: bold; text-align: center; }
+        .log-box { 
+            background: #000; height: 300px; padding: 10px; font-size: 13px; 
+            overflow-y: auto; border-radius: 4px; border: 1px solid #444;
+            display: flex; flex-direction: column-reverse; line-height: 1.6;
+        }
         
-        /* メインレイアウト */
-        #main-container { display: flex; gap: 30px; padding: 30px; background: #262626; border: 1px solid #3d3d3d; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.8); flex-wrap: wrap; }
-        #board { display: grid; grid-template-columns: repeat(15, 38px); grid-template-rows: repeat(15, 38px); background-color: var(--kaya); padding: 5px; border: 4px solid #5d4037; position: relative; }
-        .cell { width: 38px; height: 38px; border: 0.5px solid rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; cursor: pointer; }
-        .stone { width: 34px; height: 34px; border-radius: 50%; z-index: 2; box-shadow: 2px 3px 6px rgba(0,0,0,0.6); animation: drop 0.2s ease-out; }
-        @keyframes drop { from { transform: scale(1.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        .black { background: radial-gradient(circle at 35% 35%, #444, #000); }
-        .white { background: radial-gradient(circle at 35% 35%, #fff, #dcdcdc); border: 1px solid #bbb; }
+        button, select { 
+            padding: 12px; font-size: 14px; font-weight: bold; border-radius: 4px; 
+            border: none; cursor: pointer; background: #eee; color: #222;
+        }
+        button:hover { background: #ddd; }
+        button.primary { background: #2b86c5; color: #fff; }
 
-        /* ログと操作 */
-        #side-panel { width: 340px; display: flex; flex-direction: column; gap: 15px; }
-        #log-window { flex-grow: 1; background: #0f0f0f; border: 1px solid #333; padding: 15px; font-size: 0.88em; overflow-y: auto; height: 380px; display: flex; flex-direction: column-reverse; }
-        .btn-wa { background: var(--shunkei); color: white; border: 1px solid #bc8f8f; padding: 10px; cursor: pointer; font-family: serif; transition: 0.2s; }
-        .btn-wa:hover { background: #a0522d; }
-        .btn-wa:disabled { background: #444; color: #888; border-color: #333; }
-
-        /* 勝利演出用キャンバス */
-        #victory-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; display: none; }
-        #victory-text { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 8rem; color: #d4af37; text-shadow: 0 0 30px #fff; z-index: 101; display: none; white-space: nowrap; pointer-events: none; letter-spacing: 0.5em; }
+        /* 祝賀演出用 */
+        #victory-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1000; }
     </style>
 </head>
 <body>
 
-    <h1 style="color:#d4af37; letter-spacing:0.3em;">五目並べ 零 〜祝祭〜</h1>
+    <h2 style="margin-bottom: 20px; letter-spacing: 2px;">五目並べ</h2>
 
-    <div class="gauge-container">
-        <div style="display:flex; justify-content:space-between; font-size:0.9em; margin-bottom:5px;">
-            <span>黒 (先手)</span><span id="rate-text">均衡</span><span>白 (後手)</span>
+    <div class="status-container">
+        <div class="gauge-label">
+            <span>黒 (先手)</span>
+            <span id="judge-text">形勢均衡</span>
+            <span>白 (後手)</span>
         </div>
-        <div id="win-rate-wrap"><div id="win-rate-bar"></div></div>
+        <div class="gauge-bg">
+            <div id="gauge-bar"></div>
+        </div>
     </div>
 
-    <div id="main-container">
+    <div id="main-layout">
         <div>
-            <div style="margin-bottom:15px; display:flex; gap:10px;">
-                <select id="mode-select" onchange="resetGame()">
-                    <option value="cpu">対機巧 (CPU戦)</option>
-                    <option value="pvp">対人 (二人対局)</option>
-                </select>
-                <select id="level-select">
-                    <option value="ume">難易度：梅</option>
-                    <option value="take" selected>難易度：竹</option>
-                    <option value="matsu">難易度：松</option>
-                </select>
-                <button class="btn-wa" onclick="undoMove()">一手戻る</button>
-                <button class="btn-wa" onclick="resetGame()">清める</button>
-            </div>
             <div id="board"></div>
+            <div style="margin-top: 15px; display: flex; gap: 10px;">
+                <button onclick="undoMove()">一手戻す</button>
+                <button onclick="resetGame()" class="primary">新しく対局</button>
+            </div>
         </div>
 
-        <div id="side-panel">
-            <div id="status-display" style="padding:15px; background:#111; text-align:center; font-size:1.2em; border-bottom:2px solid #8b4513;">いざ。</div>
-            <div id="log-window"></div>
+        <div class="panel">
+            <div class="info-box" id="status-text">黒の番です</div>
+            
+            <div style="display: flex; flex-direction: column; gap: 5px;">
+                <label style="font-size: 12px;">対戦モード</label>
+                <select id="game-mode" onchange="resetGame()">
+                    <option value="cpu">対CPU（竹）</option>
+                    <option value="matsu">対CPU（松）</option>
+                    <option value="pvp">二人で対戦</option>
+                </select>
+            </div>
+
+            <div class="log-box" id="log-window"></div>
         </div>
     </div>
 
     <canvas id="victory-canvas"></canvas>
-    <div id="victory-text">祝 勝利</div>
 
 <script>
-const size = 15;
-let board = Array(size).fill().map(() => Array(size).fill(0));
-let history = []; // 棋譜保存用
+const SIZE = 15;
+let board = Array(SIZE).fill().map(() => Array(SIZE).fill(0));
+let history = [];
 let gameOver = false;
-let isAiThinking = false;
+let isThinking = false;
 
-function initBoard() {
+// 盤面の初期化
+function createBoard() {
     const boardEl = document.getElementById('board');
     boardEl.innerHTML = '';
-    for(let r=0; r<size; r++) {
-        for(let c=0; c<size; c++) {
+    for(let r=0; r<SIZE; r++) {
+        for(let c=0; c<SIZE; c++) {
             const cell = document.createElement('div');
             cell.className = 'cell';
-            cell.onclick = () => handleMove(r, c);
+            cell.id = `cell-${r}-${c}`;
+            cell.onclick = () => handleInput(r, c);
             boardEl.appendChild(cell);
         }
     }
 }
 
-function handleMove(r, c) {
-    if(board[r][c] !== 0 || gameOver || isAiThinking) return;
+function handleInput(r, c) {
+    if(board[r][c] !== 0 || gameOver || isThinking) return;
 
-    const mode = document.getElementById('mode-select').value;
-    const currentPlayer = (history.length % 2 === 0) ? 1 : 2;
+    const mode = document.getElementById('game-mode').value;
+    const player = (history.length % 2 === 0) ? 1 : 2;
 
-    // 石を置く
-    executeMove(r, c, currentPlayer);
+    placeStone(r, c, player);
 
-    if(!gameOver && mode === "cpu") {
-        isAiThinking = true;
-        document.getElementById('status-display').innerText = "思案中...";
-        setTimeout(aiRoutine, 600);
-    } else if(!gameOver) {
-        document.getElementById('status-display').innerText = (history.length % 2 === 0 ? "黒" : "白") + "の番です";
+    if(!gameOver && mode !== "pvp") {
+        isThinking = true;
+        document.getElementById('status-text').innerText = "相手が考えています...";
+        setTimeout(() => cpuMove(mode), 500);
     }
 }
 
-function executeMove(r, c, player) {
+function placeStone(r, c, player) {
     board[r][c] = player;
     history.push({r, c, player});
-    renderStones();
     
+    // 特定のセルにだけ石を追加（全描画しない）
+    const cell = document.getElementById(`cell-${r}-${c}`);
+    const stone = document.createElement('div');
+    stone.className = `stone ${player === 1 ? 'black' : 'white'} new`;
+    cell.appendChild(stone);
+
+    // ログ更新
+    const msg = (player === 1 ? "黒" : "白") + `: (${r+1}, ${c+1})`;
+    addLog(msg);
+
     if(checkWin(r, c, player)) {
-        triggerVictory(player);
-        return;
+        endGame(player);
+    } else {
+        const next = (history.length % 2 === 0) ? "黒" : "白";
+        document.getElementById('status-text').innerText = next + "の番です";
+        updateAIAnalysis(r, c, player);
     }
-    
-    // 評価とログ
-    const att = evaluateMove(r, c, player);
-    const def = evaluateMove(r, c, player === 1 ? 2 : 1);
-    updateGauge(player === 1 ? att - def : def - att);
-    addLog(`(${r+1},${c+1}) ： ${att > 1000 ? '妙手なり。' : '着手。'}`, player === 1 ? "#d9534f" : "#428bca");
 }
 
 function undoMove() {
     if(history.length === 0 || gameOver) return;
-    const mode = document.getElementById('mode-select').value;
-    
-    // CPU戦なら自分の手とCPUの手、2つ戻す
-    const steps = (mode === "cpu" && history.length >= 2) ? 2 : 1;
+    const mode = document.getElementById('game-mode').value;
+    const steps = (mode !== "pvp" && history.length >= 2) ? 2 : 1;
+
     for(let i=0; i<steps; i++) {
         const last = history.pop();
         board[last.r][last.c] = 0;
+        document.getElementById(`cell-${last.r}-${last.c}`).innerHTML = '';
     }
-    
-    renderStones();
-    document.getElementById('status-display').innerText = (history.length % 2 === 0 ? "黒" : "白") + "の番";
-    addLog("時を戻しました。", "#888");
+    gameOver = false;
+    isThinking = false;
+    document.getElementById('status-text').innerText = (history.length % 2 === 0 ? "黒" : "白") + "の番です";
 }
 
-function renderStones() {
-    const cells = document.getElementsByClassName('cell');
-    for(let i=0; i<cells.length; i++) cells[i].innerHTML = '';
-    history.forEach(h => {
-        const stone = document.createElement('div');
-        stone.className = `stone ${h.player === 1 ? 'black' : 'white'}`;
-        cells[h.r * size + h.c].appendChild(stone);
-    });
-}
+function cpuMove(level) {
+    let best = {r: 7, c: 7, score: -1};
+    const defWeight = (level === 'matsu') ? 2.5 : 1.2;
 
-function aiRoutine() {
-    const level = document.getElementById('level-select').value;
-    const best = getBestMove(level);
-    executeMove(best.r, best.c, 2);
-    if(!gameOver) {
-        isAiThinking = false;
-        document.getElementById('status-display').innerText = "貴殿の番";
-    }
-}
-
-// --- 勝利演出 ---
-function triggerVictory(player) {
-    gameOver = true;
-    const winner = (player === 1 ? "黒" : "白");
-    document.getElementById('status-display').innerText = winner + " の勝利！";
-    
-    // 演出開始
-    const canvas = document.getElementById('victory-canvas');
-    const text = document.getElementById('victory-text');
-    canvas.style.display = 'block';
-    text.style.display = 'block';
-    text.innerText = winner + " 勝利";
-
-    const ctx = canvas.getContext('2d');
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-
-    let particles = [];
-    for(let i=0; i<100; i++) {
-        particles.push({
-            x: Math.random() * canvas.width,
-            y: Math.random() * canvas.height,
-            size: Math.random() * 10 + 5,
-            speed: Math.random() * 3 + 1,
-            angle: Math.random() * 360
-        });
-    }
-
-    function animate() {
-        if(!gameOver) return;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = "#ffb7c5"; // 桜色
-        particles.forEach(p => {
-            ctx.beginPath();
-            ctx.ellipse(p.x, p.y, p.size, p.size/2, p.angle * Math.PI/180, 0, Math.PI*2);
-            ctx.fill();
-            p.y += p.speed;
-            p.x += Math.sin(p.y/20);
-            p.angle += 2;
-            if(p.y > canvas.height) p.y = -10;
-        });
-        requestAnimationFrame(animate);
-    }
-    animate();
-}
-
-// --- AI・評価ロジック (前回の強化版を継承) ---
-function getBestMove(level) {
-    let bestScore = -Infinity;
-    let candidates = [];
-    const defWeight = (level === 'matsu' ? 3.0 : 1.5);
-
-    for(let r=0; r<size; r++) {
-        for(let c=0; c<size; c++) {
+    for(let r=0; r<SIZE; r++) {
+        for(let c=0; c<SIZE; c++) {
             if(board[r][c] !== 0) continue;
-            let att = evaluateMove(r, c, 2);
-            let def = evaluateMove(r, c, 1);
-            let total = att + (def * defWeight);
-            if(level === 'ume') total += Math.random() * 200;
-            if(total > bestScore) { bestScore = total; candidates = [{r, c}]; }
-            else if(total === bestScore) { candidates.push({r, c}); }
+            let att = evaluate(r, c, 2);
+            let def = evaluate(r, c, 1);
+            let score = att + (def * defWeight) + (Math.random() * 10);
+            if(score > best.score) { best = {r, c, score}; }
         }
     }
-    return candidates[Math.floor(Math.random()*candidates.length)];
+    isThinking = false;
+    placeStone(best.r, best.c, 2);
 }
 
-function evaluateMove(r, c, p) {
-    let score = 0;
-    const directions = [[1,0],[0,1],[1,1],[1,-1]];
-    directions.forEach(([dr, dc]) => {
-        let line = 1, open = 0;
+function evaluate(r, c, p) {
+    let total = 0;
+    const dirs = [[1,0],[0,1],[1,1],[1,-1]];
+    dirs.forEach(([dr, dc]) => {
+        let count = 1, open = 0;
         [1, -1].forEach(s => {
             let nr = r+dr*s, nc = c+dc*s;
-            while(nr>=0 && nr<size && nc>=0 && nc<size && board[nr][nc] === p) { line++; nr+=dr*s; nc+=dc*s; }
-            if(nr>=0 && nr<size && nc>=0 && nc<size && board[nr][nc] === 0) open++;
+            while(nr>=0 && nr<SIZE && nc>=0 && nc<SIZE && board[nr][nc] === p) { count++; nr+=dr*s; nc+=dc*s; }
+            if(nr>=0 && nr<SIZE && nc>=0 && nc<SIZE && board[nr][nc] === 0) open++;
         });
-        if(line >= 5) score += 100000;
-        else if(line === 4) score += (open === 2) ? 10000 : 2000;
-        else if(line === 3) score += (open === 2) ? 1000 : 100;
+        if(count >= 5) total += 100000;
+        else if(count === 4) total += (open === 2) ? 10000 : 2000;
+        else if(count === 3) total += (open === 2) ? 1000 : 100;
     });
-    return score;
+    return total;
 }
 
 function checkWin(r, c, p) {
     return [[1,0],[0,1],[1,1],[1,-1]].some(([dr, dc]) => {
-        let ct = 1;
+        let count = 1;
         [1, -1].forEach(s => {
             let nr = r+dr*s, nc = c+dc*s;
-            while(nr>=0 && nr<size && nc>=0 && nc<size && board[nr][nc] === p) { ct++; nr+=dr*s; nc+=dc*s; }
+            while(nr>=0 && nr<SIZE && nc>=0 && nc<SIZE && board[nr][nc] === p) { count++; nr+=dr*s; nc+=dc*s; }
         });
-        return ct >= 5;
+        return count >= 5;
     });
 }
 
-function updateGauge(scoreDiff) {
-    let rate = 50 + (scoreDiff / 500);
-    rate = Math.max(5, Math.min(95, rate));
-    document.getElementById('win-rate-bar').style.width = rate + "%";
+function updateAIAnalysis(r, c, p) {
+    const score = evaluate(r, c, p);
+    let rate = 50 + (p === 2 ? score/500 : -score/500);
+    rate = Math.max(10, Math.min(90, rate));
+    document.getElementById('gauge-bar').style.width = rate + "%";
+    document.getElementById('judge-text').innerText = rate > 60 ? "白が優勢" : (rate < 40 ? "黒が優勢" : "形勢均衡");
 }
 
-function addLog(msg, color) {
-    const logWin = document.getElementById('log-window');
+function addLog(msg) {
+    const win = document.getElementById('log-window');
     const div = document.createElement('div');
-    div.style.borderBottom = "1px solid #222";
-    div.innerHTML = `<span style="color:${color}">●</span> ${msg}`;
-    logWin.prepend(div);
+    div.innerText = msg;
+    win.prepend(div);
 }
 
 function resetGame() {
-    board = Array(size).fill().map(() => Array(size).fill(0));
+    board = Array(SIZE).fill().map(() => Array(SIZE).fill(0));
     history = [];
     gameOver = false;
-    isAiThinking = false;
-    document.getElementById('victory-canvas').style.display = 'none';
-    document.getElementById('victory-text').style.display = 'none';
+    isThinking = false;
+    document.getElementById('status-text').innerText = "黒の番です";
     document.getElementById('log-window').innerHTML = '';
-    document.getElementById('status-display').innerText = "いざ。";
-    initBoard();
+    document.getElementById('gauge-bar').style.width = "50%";
+    const canvas = document.getElementById('victory-canvas');
+    canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height);
+    createBoard();
 }
 
-initBoard();
+// 勝利演出
+function endGame(p) {
+    gameOver = true;
+    const winner = p === 1 ? "黒" : "白";
+    document.getElementById('status-text').innerText = winner + "の勝利です！";
+    startConfetti();
+}
+
+function startConfetti() {
+    const canvas = document.getElementById('victory-canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    let particles = Array.from({length: 150}, () => ({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height - canvas.height,
+        w: Math.random() * 8 + 4,
+        h: Math.random() * 8 + 4,
+        color: `hsl(${Math.random() * 40 + 40}, 100%, 50%)`, // 金色系
+        v: Math.random() * 3 + 2,
+        r: Math.random() * 360
+    }));
+
+    function frame() {
+        if(!gameOver) return;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        particles.forEach(p => {
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate(p.r * Math.PI / 180);
+            ctx.fillStyle = p.color;
+            ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+            ctx.restore();
+            p.y += p.v;
+            p.r += 2;
+            if(p.y > canvas.height) p.y = -20;
+        });
+        requestAnimationFrame(frame);
+    }
+    frame();
+}
+
+createBoard();
 </script>
 </body>
 </html>

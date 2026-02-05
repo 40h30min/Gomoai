@@ -4,95 +4,65 @@
     <meta charset="UTF-8">
     <title>五目並べ</title>
     <style>
-        :root {
-            --board-color: #dbb368;
-            --wash-bg: #1a202c;
-            --text-gold: #d4af37;
-        }
         body { 
-            background: radial-gradient(circle, #2d3748 0%, #1a202c 100%);
+            background-color: #222; 
             color: #fff; 
-            font-family: "Hiragino Mincho ProN", "serif"; 
+            font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif; 
             display: flex; flex-direction: column; align-items: center; margin: 0; padding: 20px;
-            overflow: hidden;
         }
         
-        /* 形勢判断ゲージ */
-        .status-container { width: 100%; max-width: 650px; margin-bottom: 20px; z-index: 10; }
-        .gauge-label { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 8px; font-weight: bold; color: var(--text-gold); }
-        .gauge-bg { height: 8px; background: rgba(0,0,0,0.5); border-radius: 4px; overflow: hidden; border: 1px solid #444; }
-        #gauge-bar { height: 100%; width: 50%; background: linear-gradient(90deg, #e53e3e, #718096, #3182ce); transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1); }
+        .status-container { width: 100%; max-width: 600px; margin-bottom: 20px; }
+        .gauge-label { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 8px; font-weight: bold; }
+        .gauge-bg { height: 10px; background: #444; border-radius: 5px; overflow: hidden; position: relative; }
+        #gauge-bar { height: 100%; width: 50%; background: linear-gradient(90deg, #ff4b2b, #ff416c, #2b86c5); transition: width 0.5s ease; }
 
-        #main-layout { display: flex; gap: 40px; align-items: flex-start; z-index: 10; }
+        #main-layout { display: flex; gap: 30px; align-items: flex-start; justify-content: center; }
 
-        /* 碁盤のデザイン */
-        #board-container { 
-            padding: 15px; 
-            background-color: var(--board-color); 
-            background-image: url('https://www.transparenttextures.com/patterns/wood-pattern.png'); /* 木目 */
-            border: 3px solid #5d4037; 
-            box-shadow: 0 20px 50px rgba(0,0,0,0.7);
-            position: relative;
-        }
-        #board { display: grid; border: 0.5px solid rgba(0,0,0,0.3); }
+        #board-container { padding: 10px; background-color: #dbb368; border: 2px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        #board { display: grid; border: 1px solid rgba(0,0,0,0.2); }
         .cell { 
-            width: 38px; height: 38px; border: 0.5px solid rgba(0,0,0,0.3); 
-            box-sizing: border-box; display: flex; align-items: center; justify-content: center; 
-            cursor: pointer; position: relative;
+            width: 34px; height: 34px; border: 1px solid rgba(0,0,0,0.25); 
+            box-sizing: border-box; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative;
         }
         
-        /* 星（黒ポッチ） */
-        .hoshi::after {
-            content: ""; width: 8px; height: 8px; background: #000; border-radius: 50%;
-            position: absolute; z-index: 1; pointer-events: none;
+        .stone { width: 30px; height: 30px; border-radius: 50%; z-index: 2; box-shadow: 0 3px 3px rgba(0,0,0,0.4); pointer-events: none; }
+        .stone.new { animation: place-stone 0.15s ease-out; }
+        @keyframes place-stone {
+            from { transform: scale(1.3); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
         }
-
-        .stone { width: 34px; height: 34px; border-radius: 50%; z-index: 2; box-shadow: 2px 4px 6px rgba(0,0,0,0.5); pointer-events: none; }
-        .stone.new { animation: drop-stone 0.2s ease-out; }
-        @keyframes drop-stone { from { transform: translateY(-10px) scale(1.1); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } }
         .black { background: radial-gradient(circle at 30% 30%, #444, #000); }
-        .white { background: radial-gradient(circle at 30% 30%, #fff, #bbb); border: 1px solid #999; }
+        .white { background: radial-gradient(circle at 30% 30%, #fff, #ccc); border: 1px solid #999; }
 
-        /* パネル */
-        .panel { width: 320px; display: flex; flex-direction: column; gap: 15px; }
-        .info-box { background: rgba(0,0,0,0.4); border: 1px solid var(--text-gold); padding: 12px; font-size: 18px; text-align: center; color: var(--text-gold); }
+        .hint { width: 15px; height: 15px; background: #2b86c5; border-radius: 50%; box-shadow: 0 0 15px #2b86c5; animation: blink 1s infinite; position: absolute; z-index: 5; }
+        @keyframes blink { 0% { opacity: 0.3; } 50% { opacity: 1; } 100% { opacity: 0.3; } }
+
+        .panel { width: 300px; display: flex; flex-direction: column; gap: 15px; }
+        .info-box { background: #333; padding: 12px; border-radius: 4px; font-size: 15px; font-weight: bold; text-align: center; }
         .log-box { 
-            background: rgba(0,0,0,0.6); height: 350px; padding: 15px; font-size: 13px; border-radius: 4px; border: 1px solid #444;
-            display: flex; flex-direction: column-reverse; line-height: 1.8; overflow-y: auto;
+            background: #000; height: 300px; padding: 10px; font-size: 12px; border-radius: 4px; border: 1px solid #444;
+            display: flex; flex-direction: column-reverse; line-height: 1.6; overflow-y: auto;
         }
         
         button, select { 
-            padding: 10px; font-family: serif; font-size: 14px; border-radius: 2px; border: 1px solid #666; cursor: pointer; background: #333; color: #eee;
+            padding: 10px; font-size: 13px; font-weight: bold; border-radius: 4px; border: none; cursor: pointer; background: #eee; color: #222;
         }
-        button:hover { background: #444; border-color: var(--text-gold); }
-        button.primary { background: #822727; border-color: #a52a2a; }
+        button:hover { background: #ccc; }
+        button.primary { background: #2b86c5; color: #fff; }
+        button.hint-btn { background: #28a745; color: #fff; }
 
-        /* ふすまアニメーション */
-        #fusuma-l, #fusuma-r {
-            position: fixed; top: 0; width: 50%; height: 100%; 
-            background: #e2e2e2; background-image: url('https://www.transparenttextures.com/patterns/shippo.png');
-            border: 15px solid #222; z-index: 1000; transition: transform 0.8s ease-in-out;
-            display: flex; align-items: center; justify-content: center;
-        }
-        #fusuma-l { left: -50%; transform: translateX(0); border-right: 5px solid #444; }
-        #fusuma-r { right: -50%; transform: translateX(0); border-left: 5px solid #444; }
-        .fusuma-handle { width: 40px; height: 100px; background: #111; border-radius: 5px; border: 1px solid #d4af37; }
-        
-        .fusuma-active #fusuma-l { transform: translateX(100%); }
-        .fusuma-active #fusuma-r { transform: translateX(-100%); }
-
-        #victory-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 500; }
+        #victory-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1000; }
     </style>
 </head>
-<body id="body-tag">
+<body>
 
-    <h1 style="color:var(--text-gold); letter-spacing: 10px; margin-top: 0;">五目並べ</h1>
+    <h2 style="margin-bottom: 20px;">五目並べ</h2>
 
     <div class="status-container">
         <div class="gauge-label">
-            <span>貴殿 (黒)</span>
+            <span>黒 (先手)</span>
             <span id="judge-text">形勢均衡</span>
-            <span>機巧 (白)</span>
+            <span>白 (後手)</span>
         </div>
         <div class="gauge-bg"><div id="gauge-bar"></div></div>
     </div>
@@ -100,37 +70,46 @@
     <div id="main-layout">
         <div>
             <div id="board-container"><div id="board"></div></div>
-            <div style="margin-top: 20px; display: flex; gap: 10px;">
+            <div style="margin-top: 15px; display: flex; gap: 8px;">
                 <button onclick="undoMove()">一手戻す</button>
-                <button class="hint-btn" onclick="showHint()">助言を得る</button>
-                <button onclick="triggerFusuma()" class="primary">新しく対局</button>
+                <button class="hint-btn" onclick="showHint()">ヒント</button>
+                <button onclick="resetGame()" class="primary">新しく対局</button>
             </div>
         </div>
 
         <div class="panel">
-            <div class="info-box" id="status-text">いざ、参る。</div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                <select id="board-size" onchange="resetGame()">
-                    <option value="9">九路盤</option>
-                    <option value="15" selected>十五路盤</option>
-                    <option value="19">十九路盤</option>
-                </select>
-                <select id="ai-level">
-                    <option value="ume">難度：梅</option>
-                    <option value="take" selected>難度：竹</option>
-                    <option value="matsu">難度：松</option>
+            <div class="info-box" id="status-text">黒の番です</div>
+            
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div>
+                        <label style="font-size: 11px;">盤面サイズ</label>
+                        <select id="board-size" onchange="resetGame()" style="width: 100%;">
+                            <option value="9">9 x 9</option>
+                            <option value="15" selected>15 x 15</option>
+                            <option value="19">19 x 19</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size: 11px;">難易度</label>
+                        <select id="ai-level" style="width: 100%;">
+                            <option value="ume">梅 (初級)</option>
+                            <option value="take" selected>竹 (中級)</option>
+                            <option value="matsu">松 (上級)</option>
+                        </select>
+                    </div>
+                </div>
+                <label style="font-size: 11px;">モード</label>
+                <select id="game-mode" onchange="resetGame()">
+                    <option value="cpu">対CPU戦</option>
+                    <option value="pvp">二人で対戦</option>
                 </select>
             </div>
-            <select id="game-mode" onchange="resetGame()">
-                <option value="cpu">対機巧 (CPU)</option>
-                <option value="pvp">二人対局</option>
-            </select>
+
             <div class="log-box" id="log-window"></div>
         </div>
     </div>
 
-    <div id="fusuma-l"><div class="fusuma-handle"></div></div>
-    <div id="fusuma-r"><div class="fusuma-handle"></div></div>
     <canvas id="victory-canvas"></canvas>
 
 <script>
@@ -144,18 +123,13 @@ function createBoard() {
     SIZE = parseInt(document.getElementById('board-size').value);
     board = Array(SIZE).fill().map(() => Array(SIZE).fill(0));
     const boardEl = document.getElementById('board');
-    boardEl.style.gridTemplateColumns = `repeat(${SIZE}, 38px)`;
-    boardEl.style.gridTemplateRows = `repeat(${SIZE}, 38px)`;
+    boardEl.style.gridTemplateColumns = `repeat(${SIZE}, 34px)`;
+    boardEl.style.gridTemplateRows = `repeat(${SIZE}, 34px)`;
     boardEl.innerHTML = '';
-    
-    // 星（ドット）の位置定義
-    const hoshiPos = getHoshiPositions(SIZE);
-
     for(let r=0; r<SIZE; r++) {
         for(let c=0; c<SIZE; c++) {
             const cell = document.createElement('div');
             cell.className = 'cell';
-            if(hoshiPos.includes(`${r},${c}`)) cell.classList.add('hoshi');
             cell.id = `cell-${r}-${c}`;
             cell.onclick = () => handleInput(r, c);
             boardEl.appendChild(cell);
@@ -163,78 +137,86 @@ function createBoard() {
     }
 }
 
-function getHoshiPositions(size) {
-    if(size === 9) return ["2,2", "2,6", "4,4", "6,2", "6,6"];
-    if(size === 15) return ["3,3", "3,11", "7,7", "11,3", "11,11"];
-    if(size === 19) return ["3,3", "3,9", "3,15", "9,3", "9,9", "9,15", "15,3", "15,9", "15,15"];
-    return [];
-}
-
 function handleInput(r, c) {
     if(board[r][c] !== 0 || gameOver || isThinking) return;
+    removeHint();
+    const mode = document.getElementById('game-mode').value;
     const player = (history.length % 2 === 0) ? 1 : 2;
-    processMove(r, c, player);
+    
+    // プレイヤーの着手評価
+    const evalData = analyzeMove(r, c, player);
+    addLog(`黒: (${r+1},${c+1}) ${evalData.comment}`, "#fff");
+    
+    placeStone(r, c, player);
 
-    if(!gameOver && document.getElementById('game-mode').value === "cpu") {
+    if(!gameOver && mode === "cpu") {
         isThinking = true;
-        document.getElementById('status-text').innerText = "機巧 思案中...";
-        setTimeout(() => {
-            const move = searchBestMove(document.getElementById('ai-level').value, 2);
-            processMove(move.r, move.c, 2);
-            isThinking = false;
-        }, 600);
+        document.getElementById('status-text').innerText = "CPU思考中...";
+        setTimeout(cpuRoutine, 600);
     }
 }
 
-function processMove(r, c, p) {
-    const eval = analyzeMove(r, c, p);
-    board[r][c] = p;
-    history.push({r, c, p});
+function cpuRoutine() {
+    const level = document.getElementById('ai-level').value;
+    const move = searchBestMove(level, 2);
+    const evalData = analyzeMove(move.r, move.c, 2);
+    addLog(`白: (${move.r+1},${move.c+1}) ${evalData.comment}`, "#aaa");
     
+    isThinking = false;
+    placeStone(move.r, move.c, 2);
+}
+
+function placeStone(r, c, player) {
+    board[r][c] = player;
+    history.push({r, c, player});
     const cell = document.getElementById(`cell-${r}-${c}`);
     const stone = document.createElement('div');
-    stone.className = `stone ${p === 1 ? 'black' : 'white'} new`;
+    stone.className = `stone ${player === 1 ? 'black' : 'white'} new`;
     cell.appendChild(stone);
 
-    addLog(`【${p===1?'貴殿':'機巧'}】(${r+1},${c+1}) ${eval.comment}`, eval.color);
-
-    if(checkWin(r, c, p)) {
+    if(checkWin(r, c, player)) {
         gameOver = true;
-        document.getElementById('status-text').innerText = (p === 1 ? "貴殿" : "機巧") + "の勝ちにございます。";
+        document.getElementById('status-text').innerText = (player === 1 ? "黒" : "白") + "の勝利！";
         startConfetti();
     } else {
-        document.getElementById('status-text').innerText = (history.length%2===0?"黒":"白") + "の番です";
-        updateGauge(r, c, p);
+        const next = (history.length % 2 === 0) ? "黒" : "白";
+        document.getElementById('status-text').innerText = next + "の番です";
+        updateGauge(r, c, player);
     }
 }
 
 function analyzeMove(r, c, p) {
     const att = evaluate(r, c, p);
     const def = evaluate(r, c, p === 1 ? 2 : 1);
-    
-    if(att >= 100000) return { comment: "――これにて終局。", color: "#fbd38d" };
-    if(def >= 10000) return { comment: "。絶体絶命を凌ぐ。", color: "#fc8181" };
-    if(att >= 10000) return { comment: "。勝利に王手。", color: "#f6e05e" };
-    if(att >= 3000) return { comment: "。鋭き攻め。", color: "#63b3ed" };
-    if(def >= 3000) return { comment: "。手堅い受け。", color: "#9ae6b4" };
-    
-    const randomMsgs = ["。静かな一手。", "。様子を見る。", "。布石を打つ。", "。盤面を整える。"];
-    return { comment: randomMsgs[Math.floor(Math.random()*randomMsgs.length)], color: "#ccc" };
+    let comment = "。";
+    if(att >= 100000) comment = "： 勝利確定。";
+    else if(def >= 10000) comment = "： 危機回避。";
+    else if(att >= 10000) comment = "： 四連が成立。";
+    else if(att >= 1500) comment = "： 攻めの好手。";
+    else if(def >= 1500) comment = "： 相手を牽制。";
+    return { att, def, comment };
 }
 
 function searchBestMove(level, player) {
     let best = {r: -1, c: -1, score: -Infinity};
     const opponent = player === 1 ? 2 : 1;
-    const weights = { ume: 0.7, take: 1.5, matsu: 3.0 };
+    
+    // 難易度による守備重みの変化
+    const weights = { ume: 0.8, take: 1.4, matsu: 2.5 };
     const defWeight = weights[level];
 
     for(let r=0; r<SIZE; r++) {
         for(let c=0; c<SIZE; c++) {
             if(board[r][c] !== 0) continue;
-            let score = evaluate(r, c, player) + (evaluate(r, c, opponent) * defWeight);
+            let att = evaluate(r, c, player);
+            let def = evaluate(r, c, opponent);
+            let score = att + (def * defWeight);
+            
+            // 基礎スコア（中央寄り・ランダム性）
             score += (SIZE - Math.abs(SIZE/2 - r) - Math.abs(SIZE/2 - c));
-            if(level === 'ume') score += Math.random() * 300;
-            if(score > best.score) best = {r, c, score};
+            if(level === 'ume') score += Math.random() * 200;
+
+            if(score > best.score) { best = {r, c, score}; }
         }
     }
     return best;
@@ -242,7 +224,8 @@ function searchBestMove(level, player) {
 
 function evaluate(r, c, p) {
     let total = 0;
-    [[1,0],[0,1],[1,1],[1,-1]].forEach(([dr, dc]) => {
+    const dirs = [[1,0],[0,1],[1,1],[1,-1]];
+    dirs.forEach(([dr, dc]) => {
         let count = 1, open = 0;
         [1, -1].forEach(s => {
             let nr = r+dr*s, nc = c+dc*s;
@@ -252,6 +235,7 @@ function evaluate(r, c, p) {
         if(count >= 5) total += 100000;
         else if(count === 4) total += (open === 2) ? 10000 : 2000;
         else if(count === 3) total += (open === 2) ? 1500 : 200;
+        else if(count === 2) total += (open === 2) ? 100 : 10;
     });
     return total;
 }
@@ -267,27 +251,25 @@ function checkWin(r, c, p) {
     });
 }
 
-function triggerFusuma() {
-    const body = document.getElementById('body-tag');
-    body.classList.add('fusuma-active');
-    setTimeout(() => {
-        resetGame();
-        setTimeout(() => body.classList.remove('fusuma-active'), 400);
-    }, 800);
+function showHint() {
+    if(gameOver || isThinking) return;
+    removeHint();
+    const player = (history.length % 2 === 0) ? 1 : 2;
+    const move = searchBestMove('matsu', player);
+    const cell = document.getElementById(`cell-${move.r}-${move.c}`);
+    const h = document.createElement('div');
+    h.className = 'hint';
+    cell.appendChild(h);
 }
 
-function resetGame() {
-    gameOver = false; isThinking = false; history = [];
-    document.getElementById('log-window').innerHTML = '';
-    document.getElementById('gauge-bar').style.width = "50%";
-    const canvas = document.getElementById('victory-canvas');
-    canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height);
-    createBoard();
-    document.getElementById('status-text').innerText = "いざ、参る。";
+function removeHint() {
+    const h = document.querySelector('.hint');
+    if(h) h.remove();
 }
 
 function undoMove() {
     if(history.length === 0 || gameOver) return;
+    removeHint();
     const mode = document.getElementById('game-mode').value;
     const steps = (mode === "cpu" && history.length >= 2) ? 2 : 1;
     for(let i=0; i<steps; i++) {
@@ -297,50 +279,56 @@ function undoMove() {
             document.getElementById(`cell-${last.r}-${last.c}`).innerHTML = '';
         }
     }
+    gameOver = false; isThinking = false;
     document.getElementById('status-text').innerText = (history.length % 2 === 0 ? "黒" : "白") + "の番です";
 }
 
-function showHint() {
-    if(gameOver || isThinking) return;
-    const p = (history.length % 2 === 0) ? 1 : 2;
-    const move = searchBestMove('matsu', p);
-    const cell = document.getElementById(`cell-${move.r}-${move.c}`);
-    const h = document.createElement('div'); h.className = 'hint';
-    cell.appendChild(h);
-    setTimeout(() => h.remove(), 2000);
+function updateGauge(r, c, p) {
+    const att = evaluate(r, c, p);
+    let rate = 50 + (p === 2 ? att/1000 : -att/1000);
+    rate = Math.max(10, Math.min(90, rate));
+    document.getElementById('gauge-bar').style.width = rate + "%";
+    document.getElementById('judge-text').innerText = rate > 60 ? "白が優勢" : (rate < 40 ? "黒が優勢" : "形勢均衡");
 }
 
 function addLog(msg, color) {
     const win = document.getElementById('log-window');
     const div = document.createElement('div');
-    div.style.color = color; div.innerText = msg;
+    div.style.color = color;
+    div.innerText = msg;
     win.prepend(div);
 }
 
-function updateGauge(r, c, p) {
-    const val = evaluate(r, c, p);
-    let rate = 50 + (p === 2 ? val/800 : -val/800);
-    rate = Math.max(10, Math.min(90, rate));
-    document.getElementById('gauge-bar').style.width = rate + "%";
+function resetGame() {
+    gameOver = false; isThinking = false;
+    history = [];
+    document.getElementById('log-window').innerHTML = '';
+    document.getElementById('gauge-bar').style.width = "50%";
+    const canvas = document.getElementById('victory-canvas');
+    canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height);
+    createBoard();
+    document.getElementById('status-text').innerText = "黒の番です";
 }
 
 function startConfetti() {
     const canvas = document.getElementById('victory-canvas');
     const ctx = canvas.getContext('2d');
-    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-    let particles = Array.from({length: 100}, () => ({
-        x: Math.random() * canvas.width, y: -20,
-        w: Math.random() * 8 + 4, h: Math.random() * 10 + 5,
-        color: `hsl(${Math.random() * 40 + 35}, 100%, 60%)`, // 金・銅
-        v: Math.random() * 4 + 2, r: Math.random() * 360
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    let particles = Array.from({length: 120}, () => ({
+        x: Math.random() * canvas.width, y: Math.random() * canvas.height - canvas.height,
+        w: Math.random() * 8 + 4, h: Math.random() * 8 + 4,
+        color: `hsl(${Math.random() * 50 + 30}, 100%, 50%)`,
+        v: Math.random() * 3 + 2, r: Math.random() * 360
     }));
     function frame() {
         if(!gameOver) return;
-        ctx.clearRect(0,0,canvas.width,canvas.height);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
         particles.forEach(p => {
             ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.r * Math.PI / 180);
             ctx.fillStyle = p.color; ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h); ctx.restore();
-            p.y += p.v; p.r += 3; if(p.y > canvas.height) p.y = -20;
+            p.y += p.v; p.r += 2;
+            if(p.y > canvas.height) p.y = -20;
         });
         requestAnimationFrame(frame);
     }

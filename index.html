@@ -8,45 +8,24 @@
             background-color: #222; 
             color: #fff; 
             font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            margin: 0; 
-            padding: 20px;
+            display: flex; flex-direction: column; align-items: center; margin: 0; padding: 20px;
         }
         
-        /* 形勢判断ゲージ */
         .status-container { width: 100%; max-width: 600px; margin-bottom: 20px; }
         .gauge-label { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 8px; font-weight: bold; }
         .gauge-bg { height: 10px; background: #444; border-radius: 5px; overflow: hidden; position: relative; }
         #gauge-bar { height: 100%; width: 50%; background: linear-gradient(90deg, #ff4b2b, #ff416c, #2b86c5); transition: width 0.5s ease; }
 
-        #main-layout { display: flex; gap: 30px; align-items: flex-start; }
+        #main-layout { display: flex; gap: 30px; align-items: flex-start; justify-content: center; }
 
-        /* 碁盤のデザイン */
-        #board { 
-            display: grid; 
-            grid-template-columns: repeat(15, 40px); 
-            grid-template-rows: repeat(15, 40px); 
-            background-color: #dbb368; 
-            padding: 10px; 
-            border: 2px solid #333;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-        }
+        #board-container { padding: 10px; background-color: #dbb368; border: 2px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        #board { display: grid; border: 1px solid rgba(0,0,0,0.2); }
         .cell { 
-            width: 40px; height: 40px; 
-            border: 1px solid rgba(0,0,0,0.3); 
-            box-sizing: border-box;
-            display: flex; align-items: center; justify-content: center;
-            cursor: pointer;
+            width: 34px; height: 34px; border: 1px solid rgba(0,0,0,0.25); 
+            box-sizing: border-box; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative;
         }
-
-        /* 碁石：置いた瞬間だけアニメーション */
-        .stone { 
-            width: 36px; height: 36px; 
-            border-radius: 50%; 
-            box-shadow: 0 4px 4px rgba(0,0,0,0.4);
-        }
+        
+        .stone { width: 30px; height: 30px; border-radius: 50%; z-index: 2; box-shadow: 0 3px 3px rgba(0,0,0,0.4); pointer-events: none; }
         .stone.new { animation: place-stone 0.15s ease-out; }
         @keyframes place-stone {
             from { transform: scale(1.3); opacity: 0; }
@@ -55,29 +34,29 @@
         .black { background: radial-gradient(circle at 30% 30%, #444, #000); }
         .white { background: radial-gradient(circle at 30% 30%, #fff, #ccc); border: 1px solid #999; }
 
-        /* 操作パネル */
-        .panel { width: 280px; display: flex; flex-direction: column; gap: 15px; }
-        .info-box { background: #333; padding: 15px; border-radius: 8px; font-size: 16px; font-weight: bold; text-align: center; }
+        .hint { width: 15px; height: 15px; background: #2b86c5; border-radius: 50%; box-shadow: 0 0 15px #2b86c5; animation: blink 1s infinite; position: absolute; z-index: 5; }
+        @keyframes blink { 0% { opacity: 0.3; } 50% { opacity: 1; } 100% { opacity: 0.3; } }
+
+        .panel { width: 300px; display: flex; flex-direction: column; gap: 15px; }
+        .info-box { background: #333; padding: 12px; border-radius: 4px; font-size: 15px; font-weight: bold; text-align: center; }
         .log-box { 
-            background: #000; height: 300px; padding: 10px; font-size: 13px; 
-            overflow-y: auto; border-radius: 4px; border: 1px solid #444;
-            display: flex; flex-direction: column-reverse; line-height: 1.6;
+            background: #000; height: 300px; padding: 10px; font-size: 12px; border-radius: 4px; border: 1px solid #444;
+            display: flex; flex-direction: column-reverse; line-height: 1.6; overflow-y: auto;
         }
         
         button, select { 
-            padding: 12px; font-size: 14px; font-weight: bold; border-radius: 4px; 
-            border: none; cursor: pointer; background: #eee; color: #222;
+            padding: 10px; font-size: 13px; font-weight: bold; border-radius: 4px; border: none; cursor: pointer; background: #eee; color: #222;
         }
-        button:hover { background: #ddd; }
+        button:hover { background: #ccc; }
         button.primary { background: #2b86c5; color: #fff; }
+        button.hint-btn { background: #28a745; color: #fff; }
 
-        /* 祝賀演出用 */
         #victory-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1000; }
     </style>
 </head>
 <body>
 
-    <h2 style="margin-bottom: 20px; letter-spacing: 2px;">五目並べ</h2>
+    <h2 style="margin-bottom: 20px;">五目並べ</h2>
 
     <div class="status-container">
         <div class="gauge-label">
@@ -85,16 +64,15 @@
             <span id="judge-text">形勢均衡</span>
             <span>白 (後手)</span>
         </div>
-        <div class="gauge-bg">
-            <div id="gauge-bar"></div>
-        </div>
+        <div class="gauge-bg"><div id="gauge-bar"></div></div>
     </div>
 
     <div id="main-layout">
         <div>
-            <div id="board"></div>
-            <div style="margin-top: 15px; display: flex; gap: 10px;">
+            <div id="board-container"><div id="board"></div></div>
+            <div style="margin-top: 15px; display: flex; gap: 8px;">
                 <button onclick="undoMove()">一手戻す</button>
+                <button class="hint-btn" onclick="showHint()">ヒント</button>
                 <button onclick="resetGame()" class="primary">新しく対局</button>
             </div>
         </div>
@@ -102,11 +80,28 @@
         <div class="panel">
             <div class="info-box" id="status-text">黒の番です</div>
             
-            <div style="display: flex; flex-direction: column; gap: 5px;">
-                <label style="font-size: 12px;">対戦モード</label>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div>
+                        <label style="font-size: 11px;">盤面サイズ</label>
+                        <select id="board-size" onchange="resetGame()" style="width: 100%;">
+                            <option value="9">9 x 9</option>
+                            <option value="15" selected>15 x 15</option>
+                            <option value="19">19 x 19</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size: 11px;">難易度</label>
+                        <select id="ai-level" style="width: 100%;">
+                            <option value="ume">梅 (初級)</option>
+                            <option value="take" selected>竹 (中級)</option>
+                            <option value="matsu">松 (上級)</option>
+                        </select>
+                    </div>
+                </div>
+                <label style="font-size: 11px;">モード</label>
                 <select id="game-mode" onchange="resetGame()">
-                    <option value="cpu">対CPU（竹）</option>
-                    <option value="matsu">対CPU（松）</option>
+                    <option value="cpu">対CPU戦</option>
                     <option value="pvp">二人で対戦</option>
                 </select>
             </div>
@@ -118,15 +113,18 @@
     <canvas id="victory-canvas"></canvas>
 
 <script>
-const SIZE = 15;
-let board = Array(SIZE).fill().map(() => Array(SIZE).fill(0));
+let SIZE = 15;
+let board = [];
 let history = [];
 let gameOver = false;
 let isThinking = false;
 
-// 盤面の初期化
 function createBoard() {
+    SIZE = parseInt(document.getElementById('board-size').value);
+    board = Array(SIZE).fill().map(() => Array(SIZE).fill(0));
     const boardEl = document.getElementById('board');
+    boardEl.style.gridTemplateColumns = `repeat(${SIZE}, 34px)`;
+    boardEl.style.gridTemplateRows = `repeat(${SIZE}, 34px)`;
     boardEl.innerHTML = '';
     for(let r=0; r<SIZE; r++) {
         for(let c=0; c<SIZE; c++) {
@@ -141,72 +139,87 @@ function createBoard() {
 
 function handleInput(r, c) {
     if(board[r][c] !== 0 || gameOver || isThinking) return;
-
+    removeHint();
     const mode = document.getElementById('game-mode').value;
     const player = (history.length % 2 === 0) ? 1 : 2;
-
+    
+    // プレイヤーの着手評価
+    const evalData = analyzeMove(r, c, player);
+    addLog(`黒: (${r+1},${c+1}) ${evalData.comment}`, "#fff");
+    
     placeStone(r, c, player);
 
-    if(!gameOver && mode !== "pvp") {
+    if(!gameOver && mode === "cpu") {
         isThinking = true;
-        document.getElementById('status-text').innerText = "相手が考えています...";
-        setTimeout(() => cpuMove(mode), 500);
+        document.getElementById('status-text').innerText = "CPU思考中...";
+        setTimeout(cpuRoutine, 600);
     }
+}
+
+function cpuRoutine() {
+    const level = document.getElementById('ai-level').value;
+    const move = searchBestMove(level, 2);
+    const evalData = analyzeMove(move.r, move.c, 2);
+    addLog(`白: (${move.r+1},${move.c+1}) ${evalData.comment}`, "#aaa");
+    
+    isThinking = false;
+    placeStone(move.r, move.c, 2);
 }
 
 function placeStone(r, c, player) {
     board[r][c] = player;
     history.push({r, c, player});
-    
-    // 特定のセルにだけ石を追加（全描画しない）
     const cell = document.getElementById(`cell-${r}-${c}`);
     const stone = document.createElement('div');
     stone.className = `stone ${player === 1 ? 'black' : 'white'} new`;
     cell.appendChild(stone);
 
-    // ログ更新
-    const msg = (player === 1 ? "黒" : "白") + `: (${r+1}, ${c+1})`;
-    addLog(msg);
-
     if(checkWin(r, c, player)) {
-        endGame(player);
+        gameOver = true;
+        document.getElementById('status-text').innerText = (player === 1 ? "黒" : "白") + "の勝利！";
+        startConfetti();
     } else {
         const next = (history.length % 2 === 0) ? "黒" : "白";
         document.getElementById('status-text').innerText = next + "の番です";
-        updateAIAnalysis(r, c, player);
+        updateGauge(r, c, player);
     }
 }
 
-function undoMove() {
-    if(history.length === 0 || gameOver) return;
-    const mode = document.getElementById('game-mode').value;
-    const steps = (mode !== "pvp" && history.length >= 2) ? 2 : 1;
-
-    for(let i=0; i<steps; i++) {
-        const last = history.pop();
-        board[last.r][last.c] = 0;
-        document.getElementById(`cell-${last.r}-${last.c}`).innerHTML = '';
-    }
-    gameOver = false;
-    isThinking = false;
-    document.getElementById('status-text').innerText = (history.length % 2 === 0 ? "黒" : "白") + "の番です";
+function analyzeMove(r, c, p) {
+    const att = evaluate(r, c, p);
+    const def = evaluate(r, c, p === 1 ? 2 : 1);
+    let comment = "。";
+    if(att >= 100000) comment = "： 勝利確定。";
+    else if(def >= 10000) comment = "： 危機回避。";
+    else if(att >= 10000) comment = "： 四連が成立。";
+    else if(att >= 1500) comment = "： 攻めの好手。";
+    else if(def >= 1500) comment = "： 相手を牽制。";
+    return { att, def, comment };
 }
 
-function cpuMove(level) {
-    let best = {r: 7, c: 7, score: -1};
-    const defWeight = (level === 'matsu') ? 2.5 : 1.2;
+function searchBestMove(level, player) {
+    let best = {r: -1, c: -1, score: -Infinity};
+    const opponent = player === 1 ? 2 : 1;
+    
+    // 難易度による守備重みの変化
+    const weights = { ume: 0.8, take: 1.4, matsu: 2.5 };
+    const defWeight = weights[level];
 
     for(let r=0; r<SIZE; r++) {
         for(let c=0; c<SIZE; c++) {
             if(board[r][c] !== 0) continue;
-            let att = evaluate(r, c, 2);
-            let def = evaluate(r, c, 1);
-            let score = att + (def * defWeight) + (Math.random() * 10);
+            let att = evaluate(r, c, player);
+            let def = evaluate(r, c, opponent);
+            let score = att + (def * defWeight);
+            
+            // 基礎スコア（中央寄り・ランダム性）
+            score += (SIZE - Math.abs(SIZE/2 - r) - Math.abs(SIZE/2 - c));
+            if(level === 'ume') score += Math.random() * 200;
+
             if(score > best.score) { best = {r, c, score}; }
         }
     }
-    isThinking = false;
-    placeStone(best.r, best.c, 2);
+    return best;
 }
 
 function evaluate(r, c, p) {
@@ -221,56 +234,80 @@ function evaluate(r, c, p) {
         });
         if(count >= 5) total += 100000;
         else if(count === 4) total += (open === 2) ? 10000 : 2000;
-        else if(count === 3) total += (open === 2) ? 1000 : 100;
+        else if(count === 3) total += (open === 2) ? 1500 : 200;
+        else if(count === 2) total += (open === 2) ? 100 : 10;
     });
     return total;
 }
 
 function checkWin(r, c, p) {
     return [[1,0],[0,1],[1,1],[1,-1]].some(([dr, dc]) => {
-        let count = 1;
+        let ct = 1;
         [1, -1].forEach(s => {
             let nr = r+dr*s, nc = c+dc*s;
-            while(nr>=0 && nr<SIZE && nc>=0 && nc<SIZE && board[nr][nc] === p) { count++; nr+=dr*s; nc+=dc*s; }
+            while(nr>=0 && nr<SIZE && nc>=0 && nc<SIZE && board[nr][nc] === p) { ct++; nr+=dr*s; nc+=dc*s; }
         });
-        return count >= 5;
+        return ct >= 5;
     });
 }
 
-function updateAIAnalysis(r, c, p) {
-    const score = evaluate(r, c, p);
-    let rate = 50 + (p === 2 ? score/500 : -score/500);
+function showHint() {
+    if(gameOver || isThinking) return;
+    removeHint();
+    const player = (history.length % 2 === 0) ? 1 : 2;
+    const move = searchBestMove('matsu', player);
+    const cell = document.getElementById(`cell-${move.r}-${move.c}`);
+    const h = document.createElement('div');
+    h.className = 'hint';
+    cell.appendChild(h);
+}
+
+function removeHint() {
+    const h = document.querySelector('.hint');
+    if(h) h.remove();
+}
+
+function undoMove() {
+    if(history.length === 0 || gameOver) return;
+    removeHint();
+    const mode = document.getElementById('game-mode').value;
+    const steps = (mode === "cpu" && history.length >= 2) ? 2 : 1;
+    for(let i=0; i<steps; i++) {
+        const last = history.pop();
+        if(last) {
+            board[last.r][last.c] = 0;
+            document.getElementById(`cell-${last.r}-${last.c}`).innerHTML = '';
+        }
+    }
+    gameOver = false; isThinking = false;
+    document.getElementById('status-text').innerText = (history.length % 2 === 0 ? "黒" : "白") + "の番です";
+}
+
+function updateGauge(r, c, p) {
+    const att = evaluate(r, c, p);
+    let rate = 50 + (p === 2 ? att/1000 : -att/1000);
     rate = Math.max(10, Math.min(90, rate));
     document.getElementById('gauge-bar').style.width = rate + "%";
     document.getElementById('judge-text').innerText = rate > 60 ? "白が優勢" : (rate < 40 ? "黒が優勢" : "形勢均衡");
 }
 
-function addLog(msg) {
+function addLog(msg, color) {
     const win = document.getElementById('log-window');
     const div = document.createElement('div');
+    div.style.color = color;
     div.innerText = msg;
     win.prepend(div);
 }
 
 function resetGame() {
-    board = Array(SIZE).fill().map(() => Array(SIZE).fill(0));
+    gameOver = false; isThinking = false;
     history = [];
-    gameOver = false;
-    isThinking = false;
-    document.getElementById('status-text').innerText = "黒の番です";
     document.getElementById('log-window').innerHTML = '';
     document.getElementById('gauge-bar').style.width = "50%";
     const canvas = document.getElementById('victory-canvas');
     canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height);
     createBoard();
-}
-
-// 勝利演出
-function endGame(p) {
-    gameOver = true;
-    const winner = p === 1 ? "黒" : "白";
-    document.getElementById('status-text').innerText = winner + "の勝利です！";
-    startConfetti();
+    document.getElementById('status-text').innerText = "黒の番です";
 }
 
 function startConfetti() {
@@ -278,28 +315,19 @@ function startConfetti() {
     const ctx = canvas.getContext('2d');
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
-    let particles = Array.from({length: 150}, () => ({
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height - canvas.height,
-        w: Math.random() * 8 + 4,
-        h: Math.random() * 8 + 4,
-        color: `hsl(${Math.random() * 40 + 40}, 100%, 50%)`, // 金色系
-        v: Math.random() * 3 + 2,
-        r: Math.random() * 360
+    let particles = Array.from({length: 120}, () => ({
+        x: Math.random() * canvas.width, y: Math.random() * canvas.height - canvas.height,
+        w: Math.random() * 8 + 4, h: Math.random() * 8 + 4,
+        color: `hsl(${Math.random() * 50 + 30}, 100%, 50%)`,
+        v: Math.random() * 3 + 2, r: Math.random() * 360
     }));
-
     function frame() {
         if(!gameOver) return;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         particles.forEach(p => {
-            ctx.save();
-            ctx.translate(p.x, p.y);
-            ctx.rotate(p.r * Math.PI / 180);
-            ctx.fillStyle = p.color;
-            ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
-            ctx.restore();
-            p.y += p.v;
-            p.r += 2;
+            ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.r * Math.PI / 180);
+            ctx.fillStyle = p.color; ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h); ctx.restore();
+            p.y += p.v; p.r += 2;
             if(p.y > canvas.height) p.y = -20;
         });
         requestAnimationFrame(frame);
